@@ -4,30 +4,27 @@ import {
   View, 
   Text, 
   FlatList, 
-  ScrollView,
   RefreshControl,
-  ActivityIndicator
+  ActivityIndicator,
+  TouchableOpacity
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
+import { TYPOGRAPHY } from '@/constants/typography';
 import { SearchBar } from '@/components/SearchBar';
-import { CategoryPill } from '@/components/CategoryPill';
 import { ProjectCard } from '@/components/ProjectCard';
-import { categories } from '@/mocks/categories';
+import { useCategories } from '@/hooks/useCategories';
 import { useProjects } from '@/hooks/useProjects';
 
-export default function HomeScreen() {
+export default function DiscoverScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   
-  const { projects, isLoading, error, refreshProjects } = useProjects(selectedCategory || undefined);
+  const { projects, isLoading, error, refreshProjects } = useProjects();
 
   const handleCategoryPress = (categoryId: string) => {
-    setSelectedCategory(prevCategory => 
-      prevCategory === categoryId ? null : categoryId
-    );
+    router.push(`/project/${projectId}`);
   };
 
   const handleProjectPress = (projectId: string) => {
@@ -63,29 +60,41 @@ export default function HomeScreen() {
     );
   };
 
+  const renderCategorySection = (category: any) => {
+    const categoryProjects = projects.filter(p => p.category === category.id).slice(0, 4);
+    
+    if (categoryProjects.length === 0) return null;
+    
+    return (
+      <View style={styles.categorySection} key={category.id}>
+        <View style={styles.categoryHeader}>
+          <Text style={styles.categoryTitle}>{category.name.toUpperCase()}</Text>
+          <TouchableOpacity onPress={() => handleCategoryPress(category.id)}>
+            <Text style={styles.seeAllText}>See All</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <FlatList
+          data={categoryProjects}
+          renderItem={renderProjectItem}
+          keyExtractor={item => `${category.id}-${item.id}`}
+          numColumns={2}
+          scrollEnabled={false}
+          contentContainerStyle={styles.projectsContainer}
+        />
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <SearchBar
         value={searchQuery}
         onChangeText={setSearchQuery}
         onClear={() => setSearchQuery('')}
+        placeholder="Discover designers and projects..."
       />
       
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoriesContainer}
-      >
-        {categories.map(category => (
-          <CategoryPill
-            key={category.id}
-            title={category.name}
-            isSelected={selectedCategory === category.id}
-            onPress={() => handleCategoryPress(category.id)}
-          />
-        ))}
-      </ScrollView>
-
       {isLoading && !refreshing ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
@@ -96,11 +105,10 @@ export default function HomeScreen() {
         </View>
       ) : (
         <FlatList
-          data={projects}
-          renderItem={renderProjectItem}
+          data={categories}
+          renderItem={({ item }) => renderCategorySection(item)}
           keyExtractor={item => item.id}
-          numColumns={2}
-          contentContainerStyle={styles.projectsContainer}
+          contentContainerStyle={styles.categoriesListContainer}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -112,7 +120,7 @@ export default function HomeScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No projects found</Text>
+              <Text style={styles.emptyText}>No categories found</Text>
             </View>
           }
         />
@@ -126,13 +134,30 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  categoriesContainer: {
+  categoriesListContainer: {
+    paddingBottom: 20,
+  },
+  categorySection: {
+    marginBottom: 24,
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  categoryTitle: {
+    ...TYPOGRAPHY.heading,
+    fontSize: 20,
+  },
+  seeAllText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.primary,
+    fontWeight: '600',
   },
   projectsContainer: {
     paddingHorizontal: 8,
-    paddingBottom: 20,
   },
   loadingContainer: {
     flex: 1,

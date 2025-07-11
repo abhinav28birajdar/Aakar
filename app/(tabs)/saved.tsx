@@ -4,39 +4,30 @@ import {
   View, 
   Text, 
   FlatList, 
-  ScrollView,
   RefreshControl,
   ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
-import { SearchBar } from '@/components/SearchBar';
-import { CategoryPill } from '@/components/CategoryPill';
+import { TYPOGRAPHY } from '@/constants/typography';
 import { ProjectCard } from '@/components/ProjectCard';
-import { categories } from '@/mocks/categories';
 import { useProjects } from '@/hooks/useProjects';
 
-export default function HomeScreen() {
+export default function SavedScreen() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   
-  const { projects, isLoading, error, refreshProjects } = useProjects(selectedCategory || undefined);
-
-  const handleCategoryPress = (categoryId: string) => {
-    setSelectedCategory(prevCategory => 
-      prevCategory === categoryId ? null : categoryId
-    );
-  };
+  // In a real app, we would fetch only saved projects
+  // For demo purposes, we'll just use the first 5 projects
+  const { projects, isLoading, error, refreshProjects, toggleSaveProject } = useProjects();
+  const savedProjects = projects.slice(0, 5);
 
   const handleProjectPress = (projectId: string) => {
     router.push(`/project/${projectId}`);
   };
 
   const handleSaveToggle = (projectId: string) => {
-    console.log(`Toggle save for project ${projectId}`);
-    // In a real app, this would update Firestore
+    toggleSaveProject(projectId, user.uid);
   };
 
   const onRefresh = useCallback(async () => {
@@ -57,6 +48,7 @@ export default function HomeScreen() {
         imageUrl={item.imageUrl}
         backgroundColor={item.backgroundColor}
         aspectRatio={aspectRatio}
+        isSaved={true}
         onPress={() => handleProjectPress(item.id)}
         onSaveToggle={() => handleSaveToggle(item.id)}
       />
@@ -65,27 +57,8 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <SearchBar
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        onClear={() => setSearchQuery('')}
-      />
+      <Text style={styles.heading}>Saved Projects</Text>
       
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoriesContainer}
-      >
-        {categories.map(category => (
-          <CategoryPill
-            key={category.id}
-            title={category.name}
-            isSelected={selectedCategory === category.id}
-            onPress={() => handleCategoryPress(category.id)}
-          />
-        ))}
-      </ScrollView>
-
       {isLoading && !refreshing ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
@@ -96,7 +69,7 @@ export default function HomeScreen() {
         </View>
       ) : (
         <FlatList
-          data={projects}
+          data={savedProjects}
           renderItem={renderProjectItem}
           keyExtractor={item => item.id}
           numColumns={2}
@@ -112,7 +85,10 @@ export default function HomeScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No projects found</Text>
+              <Text style={styles.emptyText}>No saved projects yet</Text>
+              <Text style={styles.emptySubtext}>
+                Projects you save will appear here
+              </Text>
             </View>
           }
         />
@@ -126,9 +102,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  categoriesContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  heading: {
+    ...TYPOGRAPHY.heading,
+    padding: 16,
   },
   projectsContainer: {
     paddingHorizontal: 8,
@@ -150,10 +126,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emptyContainer: {
-    padding: 20,
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
+    marginTop: 100,
   },
   emptyText: {
+    ...TYPOGRAPHY.subheading,
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    ...TYPOGRAPHY.body,
     color: COLORS.darkGray,
+    textAlign: 'center',
   },
 });
