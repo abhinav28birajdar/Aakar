@@ -1,42 +1,59 @@
 {
   "expo": {
     "name": "Aakar",
-    "slug": "Aakar",
+    "slug": "aakar",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "aakar",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#EE4D2D"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.aakar",
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#EE4D2D"
       },
-      "edgeToEdgeEnabled": true
+      "package": "com.yourcompany.aakar",
+      "versionCode": 1
     },
     "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/favicon.png"
     },
+    "scheme": "aakar",
     "plugins": [
-      "expo-router",
+      "expo-font",
       [
-        "expo-splash-screen",
+        "expo-image-picker",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "photosPermission": "Allow Aakar to access your photos to share designs.",
+          "cameraPermission": "Allow Aakar to access your camera to take photos."
         }
-      ]
+      ],
+      "expo-notifications"
     ],
-    "experiments": {
-      "typedRoutes": true
-    }
+    "extra": {
+      "EXPO_PUBLIC_SUPABASE_URL": "${EXPO_PUBLIC_SUPABASE_URL}",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "${EXPO_PUBLIC_SUPABASE_ANON_KEY}",
+      "EXPO_PUBLIC_NEXTJS_API_BASE_URL": "${EXPO_PUBLIC_NEXTJS_API_BASE_URL}",
+      "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "${EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY}"
+    },
+    "owner": "your_expo_account_username"
   }
 }
