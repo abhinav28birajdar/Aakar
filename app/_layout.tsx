@@ -1,83 +1,187 @@
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { useTheme } from "@/hooks/useTheme";
+import { cn } from "@/lib/utils/helpers";
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
 import { useFonts } from "expo-font";
+import * as Notifications from "expo-notifications";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
-import { COLORS } from "@/constants/colors";
+import { useCallback, useEffect, useState } from "react";
+import { View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+
+// Configure notification handling
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 export const unstable_settings = {
-  initialRouteName: "(tabs)",
+  initialRouteName: "index",
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    ...FontAwesome.font,
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
   });
 
-  useEffect(() => {
-    if (error) {
-      console.error(error);
-      throw error;
-    }
-  }, [error]);
+  const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
+  const [notification, setNotification] = useState<Notifications.Notification | undefined>();
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
+    // Register for push notifications
+    const registerForPushNotificationsAsync = async () => {
+      let token;
+      try {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+        if (finalStatus !== 'granted') {
+          console.warn('Failed to get push token for push notification!');
+          return;
+        }
+        token = (await Notifications.getExpoPushTokenAsync()).data;
+        setExpoPushToken(token);
+      } catch (e) {
+        console.error('Error registering for push notifications:', e);
+      }
+    };
 
-  if (!loaded) {
+    registerForPushNotificationsAsync();
+
+    // Notification listeners
+    const notificationListener = Notifications.addNotificationReceivedListener(notification => {
+      setNotification(notification);
+    });
+
+    const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('Notification tapped:', response);
+      // Handle navigation based on notification data
+    });
+
+    return () => {
+      Notifications.removeNotificationSubscription(notificationListener);
+      Notifications.removeNotificationSubscription(responseListener);
+    };
+  }, []);
+
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded) {
+      await SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <SafeAreaProvider onLayout={onLayoutRootView}>
+      <ThemeProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <RootLayoutNav />
+          </NotificationProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
+  );
 }
 
 function RootLayoutNav() {
+  const { theme, isDark } = useTheme();
+  
   return (
-    <>
-      <StatusBar style="dark" />
+    <View className={cn("flex-1", isDark ? "bg-dark-background" : "bg-background")}>
+      <StatusBar style={isDark ? "light" : "dark"} />
       <Stack
         screenOptions={{
           headerStyle: {
-            backgroundColor: COLORS.white,
+            backgroundColor: theme === 'dark' ? '#1C1C1E' : '#FFFFFF',
           },
-          headerTintColor: COLORS.black,
+          headerTintColor: theme === 'dark' ? '#FFFFFF' : '#000000',
           headerTitleStyle: {
-            fontWeight: 'bold',
+            fontFamily: 'Inter_600SemiBold',
           },
           headerShadowVisible: false,
+          animation: 'slide_from_right',
         }}
       >
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        {/* Authentication Group */}
         <Stack.Screen 
-          name="project/[id]" 
+          name="(auth)" 
           options={{ 
-            title: "Project Details",
-            presentation: "card",
+            headerShown: false,
+            animation: 'fade',
           }} 
         />
+        
+        {/* Main App Tabs */}
         <Stack.Screen 
-          name="designer/[id]" 
+          name="(tabs)" 
           options={{ 
-            title: "Designer Profile",
-            presentation: "card",
+            headerShown: false,
+            animation: 'fade',
+          }} 
+        />
+        
+        {/* Design Screens */}
+        <Stack.Screen 
+          name="(design)" 
+          options={{ 
+            headerShown: false 
+          }} 
+        />
+
+        {/* Modal Screens */}
+        <Stack.Screen 
+          name="design/edit" 
+          options={{ 
+            presentation: 'modal',
+            title: 'Edit Design',
+            animation: 'slide_from_bottom',
           }} 
         />
         <Stack.Screen 
           name="modal" 
           options={{ 
-            presentation: "modal",
-            title: "Information",
+            presentation: 'modal',
+            title: 'Information',
+            animation: 'slide_from_bottom',
+          }} 
+        />
+
+        {/* Detail Screens */}
+        <Stack.Screen 
+          name="project/[id]" 
+          options={{ 
+            title: 'Project Details',
+            headerBackTitleVisible: false,
+          }} 
+        />
+        <Stack.Screen 
+          name="designer/[id]" 
+          options={{ 
+            title: 'Designer Profile',
+            headerBackTitleVisible: false,
           }} 
         />
       </Stack>
-    </>
+    </View>
   );
 }

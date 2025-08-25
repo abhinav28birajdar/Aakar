@@ -1,36 +1,46 @@
-import React from 'react';
-import { StyleSheet, View, Image, TouchableOpacity, ViewStyle } from 'react-native';
-import { User } from 'lucide-react-native';
 import { COLORS } from '@/constants/colors';
+import { User } from 'lucide-react-native';
+import React from 'react';
+import { Image, StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
 
 interface AvatarProps {
   uri?: string;
-  size?: number;
+  size?: number | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   onPress?: () => void;
   style?: ViewStyle;
 }
 
+const sizeMap = {
+  xs: 24,
+  sm: 32,
+  md: 40,
+  lg: 48,
+  xl: 56,
+};
+
 export const Avatar = ({ uri, size = 40, onPress, style }: AvatarProps) => {
+  const sizeValue = typeof size === 'string' ? sizeMap[size] : size;
+  const borderRadius = sizeValue / 2;
   const content = uri ? (
     <Image
       source={{ uri }}
-      style={[styles.image, { width: size, height: size, borderRadius: size / 2 }]}
+      style={[styles.image, { width: sizeValue, height: sizeValue, borderRadius }]}
     />
   ) : (
     <View
       style={[
         styles.placeholder,
-        { width: size, height: size, borderRadius: size / 2 },
+        { width: sizeValue, height: sizeValue, borderRadius },
       ]}
     >
-      <User size={size * 0.6} color={COLORS.white} />
+      <User size={sizeValue * 0.6} color={COLORS.white} />
     </View>
   );
 
   if (onPress) {
     return (
       <TouchableOpacity
-        style={[{ width: size, height: size }, style]}
+        style={[{ width: sizeValue, height: sizeValue }, style]}
         onPress={onPress}
         activeOpacity={0.8}
       >
@@ -39,7 +49,7 @@ export const Avatar = ({ uri, size = 40, onPress, style }: AvatarProps) => {
     );
   }
 
-  return <View style={[{ width: size, height: size }, style]}>{content}</View>;
+  return <View style={[{ width: sizeValue, height: sizeValue }, style]}>{content}</View>;
 };
 
 const styles = StyleSheet.create({

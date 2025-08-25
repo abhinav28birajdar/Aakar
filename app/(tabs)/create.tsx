@@ -1,25 +1,34 @@
-import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  ScrollView,
-  Image,
-  TextInput,
-  Alert,
-  Platform
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-import { Upload, Plus, X } from 'lucide-react-native';
+import { Button } from '@/components/Button';
 import { COLORS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
-import { Button } from '@/components/Button';
 import { categories } from '@/mocks/categories';
+import * as ImagePicker from 'expo-image-picker';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Edit2, Plus, Upload, X } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 export default function CreateScreen() {
   const router = useRouter();
+  const { editedImageUri } = useLocalSearchParams<{ editedImageUri: string }>();
+
+  // Update main image when returning from edit screen
+  useEffect(() => {
+    if (editedImageUri) {
+      setMainImage(editedImageUri);
+      router.setParams({ editedImageUri: undefined }); // Clear the param
+    }
+  }, [editedImageUri]);
   const [mainImage, setMainImage] = useState<string | null>(null);
   const [additionalImages, setAdditionalImages] = useState<string[]>([]);
   const [title, setTitle] = useState('');
@@ -114,12 +123,23 @@ export default function CreateScreen() {
         {mainImage ? (
           <View style={styles.mainImageWrapper}>
             <Image source={{ uri: mainImage }} style={styles.mainImage} />
-            <TouchableOpacity 
-              style={styles.removeImageButton}
-              onPress={() => setMainImage(null)}
-            >
-              <X size={20} color={COLORS.white} />
-            </TouchableOpacity>
+            <View style={styles.imageActions}>
+              <TouchableOpacity 
+                style={[styles.imageActionButton, styles.editButton]}
+                onPress={() => mainImage && router.push({
+                  pathname: '../../(design)/edit' as const,
+                  params: { imageUri: mainImage }
+                })}
+              >
+                <Edit2 size={20} color={COLORS.white} />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.imageActionButton, styles.removeButton]}
+                onPress={() => setMainImage(null)}
+              >
+                <X size={20} color={COLORS.white} />
+              </TouchableOpacity>
+            </View>
           </View>
         ) : (
           <TouchableOpacity 
@@ -364,5 +384,25 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: 16,
+  },
+  imageActions: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  imageActionButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editButton: {
+    backgroundColor: COLORS.primary,
+  },
+  removeButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
 });

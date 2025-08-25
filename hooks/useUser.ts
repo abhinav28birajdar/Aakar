@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from './useAuth';
 
 export interface UserProfile {
@@ -37,7 +38,7 @@ export const useUser = (userId?: string) => {
         return;
       }
 
-      const userDoc = await db.collection('users').doc(targetUserId).get();
+      const userDoc = await getDoc(doc(db, 'users', targetUserId));
 
       if (!userDoc.exists) {
         throw new Error('User not found');
@@ -63,7 +64,7 @@ export const useUser = (userId?: string) => {
         setIsLoading(true);
         setError(null);
 
-        await db.collection('users').doc(authUser.uid).update(updates);
+        await updateDoc(doc(db, 'users', authUser.uid), updates);
 
         // Optimistically update local state
         if (user) {
@@ -83,8 +84,8 @@ export const useUser = (userId?: string) => {
 
   const getUserById = useCallback(async (id: string) => {
     try {
-      const userDoc = await db.collection('users').doc(id).get();
-      if (userDoc.exists) {
+      const userDoc = await getDoc(doc(db, 'users', id));
+      if (userDoc.exists()) {
         return { id: userDoc.id, ...userDoc.data() } as UserProfile;
       }
       return null;

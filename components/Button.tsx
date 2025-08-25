@@ -1,17 +1,19 @@
-import React from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  TouchableOpacity, 
-  ActivityIndicator,
-  ViewStyle,
-  TextStyle
-} from 'react-native';
 import { COLORS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
+import React from 'react';
+import {
+    ActivityIndicator,
+    StyleSheet,
+    Text,
+    TextStyle,
+    TouchableOpacity,
+    View,
+    ViewStyle,
+} from 'react-native';
 
 interface ButtonProps {
-  title: string;
+  title?: string;
+  children?: React.ReactNode;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'outline';
   size?: 'small' | 'medium' | 'large';
@@ -19,10 +21,13 @@ interface ButtonProps {
   loading?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  icon?: React.ReactNode;
+  iconPosition?: 'left' | 'right';
 }
 
 export const Button = ({
   title,
+  children,
   onPress,
   variant = 'primary',
   size = 'medium',
@@ -30,6 +35,8 @@ export const Button = ({
   loading = false,
   style,
   textStyle,
+  icon,
+  iconPosition = 'left',
 }: ButtonProps) => {
   const getButtonStyle = () => {
     switch (variant) {
@@ -89,14 +96,22 @@ export const Button = ({
           size="small" 
         />
       ) : (
-        <Text style={[
-          TYPOGRAPHY.button, 
-          getTextStyle(), 
-          disabled && styles.disabledText,
-          textStyle
-        ]}>
-          {title}
-        </Text>
+        <>
+          {icon && iconPosition === 'left' && (
+            <View style={styles.leftIcon}>{icon}</View>
+          )}
+          <Text style={[
+            TYPOGRAPHY.button, 
+            getTextStyle(), 
+            disabled && styles.disabledText,
+            textStyle
+          ]}>
+            {children || title}
+          </Text>
+          {icon && iconPosition === 'right' && (
+            <View style={styles.rightIcon}>{icon}</View>
+          )}
+        </>
       )}
     </TouchableOpacity>
   );
@@ -104,6 +119,7 @@ export const Button = ({
 
 const styles = StyleSheet.create({
   button: {
+    flexDirection: 'row',
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -112,6 +128,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  leftIcon: {
+    marginRight: 8,
+  },
+  rightIcon: {
+    marginLeft: 8,
   },
   primaryButton: {
     backgroundColor: COLORS.primary,

@@ -1,28 +1,84 @@
+import { useTheme } from "@/hooks/useTheme";
 import { Stack } from "expo-router";
-import { COLORS } from "@/constants/colors";
 
 export default function AuthLayout() {
+  const { theme, isDark } = useTheme();
+
   return (
     <Stack
       screenOptions={{
         headerStyle: {
-          backgroundColor: COLORS.white,
+          backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
         },
-        headerTintColor: COLORS.black,
+        headerTintColor: isDark ? '#FFFFFF' : '#000000',
         headerTitleStyle: {
-          fontWeight: 'bold',
+          fontFamily: 'Inter_600SemiBold',
         },
         headerShadowVisible: false,
         contentStyle: {
-          backgroundColor: COLORS.background,
+          backgroundColor: isDark ? '#1C1C1E' : '#FDFDFD',
         },
+        animation: 'slide_from_right',
       }}
     >
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="login" options={{ title: "Log In" }} />
-      <Stack.Screen name="register" options={{ title: "Create Account" }} />
-      <Stack.Screen name="forgot-password" options={{ title: "Reset Password" }} />
-      <Stack.Screen name="role-selection" options={{ title: "Select Role", headerBackVisible: false }} />
+      {/* Landing/Welcome Screen */}
+      <Stack.Screen 
+        name="index" 
+        options={{ 
+          headerShown: false,
+          animation: 'fade',
+        }} 
+      />
+
+      {/* Main Auth Screens */}
+      <Stack.Screen 
+        name="login" 
+        options={{ 
+          title: "Log In",
+          animation: 'slide_from_right',
+        }} 
+      />
+      <Stack.Screen 
+        name="register" 
+        options={{ 
+          title: "Create Account",
+          animation: 'slide_from_right',
+        }} 
+      />
+
+      {/* Password Reset Flow */}
+      <Stack.Screen 
+        name="forgot-password" 
+        options={{ 
+          title: "Reset Password",
+          animation: 'slide_from_right',
+        }} 
+      />
+      <Stack.Screen 
+        name="reset-password" 
+        options={{ 
+          title: "Set New Password",
+          animation: 'slide_from_right',
+        }} 
+      />
+
+      {/* Profile Setup Screens */}
+      <Stack.Screen 
+        name="role-selection" 
+        options={{ 
+          title: "Select Role",
+          headerBackVisible: false, // Can't go back from here
+          animation: 'slide_from_right',
+        }} 
+      />
+      <Stack.Screen 
+        name="profile-setup" 
+        options={{ 
+          title: "Complete Profile",
+          headerBackVisible: false,
+          animation: 'slide_from_right',
+        }} 
+      />
     </Stack>
   );
 }
