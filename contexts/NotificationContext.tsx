@@ -28,7 +28,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           .select('id', { count: 'exact' })
           .eq('read', false);
           
-        setUnreadCount(count || 0);
+        setUnreadCount(count?.length || 0);
       })
       .subscribe();
 

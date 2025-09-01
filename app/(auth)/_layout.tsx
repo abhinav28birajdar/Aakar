@@ -2,7 +2,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { Stack } from "expo-router";
 
 export default function AuthLayout() {
-  const { theme, isDark } = useTheme();
+  const { isDark } = useTheme();
 
   return (
     <Stack

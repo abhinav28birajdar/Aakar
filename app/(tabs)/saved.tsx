@@ -1,21 +1,23 @@
-import React, { useState, useCallback } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  FlatList, 
-  RefreshControl,
-  ActivityIndicator
-} from 'react-native';
-import { useRouter } from 'expo-router';
+import { ProjectCard } from '@/components/ProjectCard';
 import { COLORS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
-import { ProjectCard } from '@/components/ProjectCard';
+import { useAuth } from '@/contexts/AuthContext';
 import { useProjects } from '@/hooks/useProjects';
+import { useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    View
+} from 'react-native';
 
 export default function SavedScreen() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
+  const { user } = useAuth();
   
   // In a real app, we would fetch only saved projects
   // For demo purposes, we'll just use the first 5 projects
@@ -27,7 +29,9 @@ export default function SavedScreen() {
   };
 
   const handleSaveToggle = (projectId: string) => {
-    toggleSaveProject(projectId, user.uid);
+    if (user?.id) {
+      toggleSaveProject(projectId, user.id);
+    }
   };
 
   const onRefresh = useCallback(async () => {

@@ -16,3 +16,23 @@ export const COLORS = {
     peach: '#FFCC99',
   }
 };
+
+// Theme-based colors for compatibility
+export const Colors = {
+  light: {
+    icon: '#666666',
+    text: '#000000',
+    background: '#F0F0F0',
+    tint: '#FF6700',
+    tabIconDefault: '#CCCCCC',
+    tabIconSelected: '#FF6700',
+  },
+  dark: {
+    icon: '#CCCCCC',
+    text: '#FFFFFF',
+    background: '#000000',
+    tint: '#FF6700',
+    tabIconDefault: '#666666',
+    tabIconSelected: '#FF6700',
+  },
+};

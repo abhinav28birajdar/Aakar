@@ -1,8 +1,8 @@
 // src/lib/api/gemini.ts
 import { siteConfig } from '../constants';
-import { AAResponse } from '../types';
+import { APIResponse } from '../types';
 
-export async function callAIEditEndpoint(imageBase64: string, prompt: string, maskBase64?: string): Promise<AAResponse> {
+export async function callAIEditEndpoint(imageBase64: string, prompt: string, maskBase64?: string): Promise<APIResponse<any>> {
   const res = await fetch(`${siteConfig.nextJsApiBaseUrl}/api/gemini/image-edit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -11,7 +11,7 @@ export async function callAIEditEndpoint(imageBase64: string, prompt: string, ma
   return res.json();
 }
 
-export async function callAIGenerateEndpoint(prompt: string): Promise<AAResponse> {
+export async function callAIGenerateEndpoint(prompt: string): Promise<APIResponse<any>> {
   const res = await fetch(`${siteConfig.nextJsApiBaseUrl}/api/gemini/image-generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

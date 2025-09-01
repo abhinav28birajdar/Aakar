@@ -1,22 +1,9 @@
 import { COLORS } from '@/constants/colors';
-import { Slider } from '@react-native-community/slider';
-import { BlurView } from 'expo-blur';
+import Slider from '@react-native-community/slider';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Crop, Edit2, RotateCcw, Wand2 } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { PanGestureHandler, PinchGestureHandler, State } from 'react-native-gesture-handler';
-import Animated, {
-    useAnimatedGestureHandler,
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring,
-} from 'react-native-reanimated';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const TOOLBAR_HEIGHT = 60;
-const AnimatedImage = Animated.createAnimatedComponent(Image);
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface ImageEditorProps {
   imageUri: string;
@@ -24,87 +11,39 @@ interface ImageEditorProps {
   onCancel: () => void;
 }
 
-export const ImageEditor = ({ imageUri, onSave, onCancel }: ImageEditorProps) => {
-  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
-  const [editingMode, setEditingMode] = useState<'none' | 'crop' | 'adjust'>('none');
-  const [adjustments, setAdjustments] = useState({
+interface Adjustments {
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  rotation: number;
+}
+
+export const ImageEditor: React.FC<ImageEditorProps> = ({
+  imageUri,
+  onSave,
+  onCancel,
+}) => {
+  const [adjustments, setAdjustments] = useState<Adjustments>({
     brightness: 0,
     contrast: 0,
     saturation: 0,
+    rotation: 0,
   });
+  const [activeAdjustment, setActiveAdjustment] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  // Animated values for pan and pinch
-  const scale = useSharedValue(1);
-  const savedScale = useSharedValue(1);
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const savedTranslateX = useSharedValue(0);
-  const savedTranslateY = useSharedValue(0);
-
-  // Load image dimensions
-  React.useEffect(() => {
-    Image.getSize(imageUri, (width, height) => {
-      const aspectRatio = width / height;
-      const calculatedHeight = SCREEN_WIDTH / aspectRatio;
-      setImageSize({ width: SCREEN_WIDTH, height: calculatedHeight });
-    });
-  }, [imageUri]);
-
-  // Pan gesture handler
-  const panGestureHandler = useAnimatedGestureHandler({
-    onStart: (_, ctx: any) => {
-      ctx.startX = translateX.value;
-      ctx.startY = translateY.value;
-    },
-    onActive: (event, ctx) => {
-      translateX.value = ctx.startX + event.translationX;
-      translateY.value = ctx.startY + event.translationY;
-    },
-    onEnd: () => {
-      savedTranslateX.value = translateX.value;
-      savedTranslateY.value = translateY.value;
-    },
-  });
-
-  // Pinch gesture handler
-  const pinchGestureHandler = useAnimatedGestureHandler({
-    onStart: (_, ctx: any) => {
-      ctx.startScale = scale.value;
-    },
-    onActive: (event, ctx) => {
-      scale.value = ctx.startScale * event.scale;
-    },
-    onEnd: () => {
-      savedScale.value = scale.value;
-    },
-  });
-
-  // Animated style for the image
-  const imageStyle = useAnimatedStyle(() => {
-    return {
-      transform: [
-        { translateX: translateX.value },
-        { translateY: translateY.value },
-        { scale: scale.value },
-      ],
-    };
-  });
-
-  // Apply adjustments to image
-  const applyAdjustments = async () => {
+  const processImage = async () => {
+    setIsProcessing(true);
     try {
       const actions: ImageManipulator.Action[] = [];
-      
-      if (adjustments.brightness !== 0) {
-        actions.push({ brightness: adjustments.brightness / 100 });
-      }
-      if (adjustments.contrast !== 0) {
-        actions.push({ contrast: 1 + (adjustments.contrast / 100) });
-      }
-      if (adjustments.saturation !== 0) {
-        actions.push({ saturate: 1 + (adjustments.saturation / 100) });
+
+      // Add rotation if needed
+      if (adjustments.rotation !== 0) {
+        actions.push({ rotate: adjustments.rotation });
       }
 
+      // Note: expo-image-manipulator doesn't support brightness, contrast, saturation
+      // These would need to be implemented with a different library or custom solution
       const result = await ImageManipulator.manipulateAsync(
         imageUri,
         actions,
@@ -113,161 +52,138 @@ export const ImageEditor = ({ imageUri, onSave, onCancel }: ImageEditorProps) =>
 
       onSave(result.uri);
     } catch (error) {
-      console.error('Error applying adjustments:', error);
+      Alert.alert('Error', 'Failed to process image');
+      console.error('Image processing error:', error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const renderToolbar = () => (
-    <BlurView intensity={80} tint="dark" style={styles.toolbar}>
-      <TouchableOpacity 
-        style={styles.toolButton} 
-        onPress={() => setEditingMode('crop')}
-      >
-        <Crop color={COLORS.white} size={24} />
-        <Text style={styles.toolText}>Crop</Text>
-      </TouchableOpacity>
+  const resetAdjustments = () => {
+    setAdjustments({
+      brightness: 0,
+      contrast: 0,
+      saturation: 0,
+      rotation: 0,
+    });
+    setActiveAdjustment(null);
+  };
 
-      <TouchableOpacity 
-        style={styles.toolButton}
-        onPress={() => setEditingMode('adjust')}
-      >
-        <Edit2 color={COLORS.white} size={24} />
-        <Text style={styles.toolText}>Adjust</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity 
-        style={styles.toolButton}
-        onPress={() => {
-          // Reset transformations
-          scale.value = withSpring(1);
-          translateX.value = withSpring(0);
-          translateY.value = withSpring(0);
-          setAdjustments({ brightness: 0, contrast: 0, saturation: 0 });
-        }}
-      >
-        <RotateCcw color={COLORS.white} size={24} />
-        <Text style={styles.toolText}>Reset</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity 
-        style={[styles.toolButton, { opacity: 0.5 }]}
-        onPress={() => {
-          // This would integrate with AI features
-          // For now it's disabled
-        }}
-      >
-        <Wand2 color={COLORS.white} size={24} />
-        <Text style={styles.toolText}>AI Edit</Text>
-      </TouchableOpacity>
-    </BlurView>
-  );
-
-  const renderAdjustmentControls = () => (
-    <BlurView intensity={80} tint="dark" style={styles.adjustmentPanel}>
-      <View style={styles.sliderContainer}>
-        <Text style={styles.sliderLabel}>Brightness</Text>
-        <Slider
-          style={styles.slider}
-          minimumValue={-100}
-          maximumValue={100}
-          value={adjustments.brightness}
-          onValueChange={(value) => setAdjustments(prev => ({ ...prev, brightness: value }))}
-          minimumTrackTintColor={COLORS.primary}
-          maximumTrackTintColor={COLORS.white}
-          thumbTintColor={COLORS.primary}
-        />
-      </View>
-
-      <View style={styles.sliderContainer}>
-        <Text style={styles.sliderLabel}>Contrast</Text>
-        <Slider
-          style={styles.slider}
-          minimumValue={-100}
-          maximumValue={100}
-          value={adjustments.contrast}
-          onValueChange={(value) => setAdjustments(prev => ({ ...prev, contrast: value }))}
-          minimumTrackTintColor={COLORS.primary}
-          maximumTrackTintColor={COLORS.white}
-          thumbTintColor={COLORS.primary}
-        />
-      </View>
-
-      <View style={styles.sliderContainer}>
-        <Text style={styles.sliderLabel}>Saturation</Text>
-        <Slider
-          style={styles.slider}
-          minimumValue={-100}
-          maximumValue={100}
-          value={adjustments.saturation}
-          onValueChange={(value) => setAdjustments(prev => ({ ...prev, saturation: value }))}
-          minimumTrackTintColor={COLORS.primary}
-          maximumTrackTintColor={COLORS.white}
-          thumbTintColor={COLORS.primary}
-        />
-      </View>
-
-      <TouchableOpacity 
-        style={styles.applyButton}
-        onPress={applyAdjustments}
-      >
-        <Text style={styles.applyButtonText}>Apply Changes</Text>
-      </TouchableOpacity>
-    </BlurView>
-  );
+  const rotateImage = () => {
+    setAdjustments(prev => ({
+      ...prev,
+      rotation: (prev.rotation + 90) % 360,
+    }));
+  };
 
   return (
     <View style={styles.container}>
-      <PinchGestureHandler
-        onGestureEvent={pinchGestureHandler}
-        onHandlerStateChange={({ nativeEvent }) => {
-          if (nativeEvent.state === State.END) {
-            savedScale.value = scale.value;
-          }
-        }}
-      >
-        <Animated.View>
-          <PanGestureHandler
-            onGestureEvent={panGestureHandler}
-            onHandlerStateChange={({ nativeEvent }) => {
-              if (nativeEvent.state === State.END) {
-                savedTranslateX.value = translateX.value;
-                savedTranslateY.value = translateY.value;
-              }
-            }}
-          >
-            <Animated.View>
-              <AnimatedImage
-                source={{ uri: imageUri }}
-                style={[
-                  {
-                    width: imageSize.width,
-                    height: imageSize.height,
-                  },
-                  imageStyle,
-                ]}
-                resizeMode="contain"
-              />
-            </Animated.View>
-          </PanGestureHandler>
-        </Animated.View>
-      </PinchGestureHandler>
+      {/* Image Preview */}
+      <View style={styles.imageContainer}>
+        <Image 
+          source={{ uri: imageUri }} 
+          style={[
+            styles.image,
+            { transform: [{ rotate: `${adjustments.rotation}deg` }] }
+          ]}
+          resizeMode="contain"
+        />
+      </View>
 
-      {renderToolbar()}
-      {editingMode === 'adjust' && renderAdjustmentControls()}
+      {/* Adjustment Controls */}
+      {activeAdjustment && (
+        <View style={styles.sliderContainer}>
+          <Text style={styles.adjustmentLabel}>
+            {activeAdjustment.charAt(0).toUpperCase() + activeAdjustment.slice(1)}
+          </Text>
+          <Slider
+            style={styles.slider}
+            minimumValue={-100}
+            maximumValue={100}
+            value={adjustments[activeAdjustment as keyof Adjustments] as number}
+            onValueChange={(value: number) => 
+              setAdjustments(prev => ({ ...prev, [activeAdjustment]: value }))
+            }
+            minimumTrackTintColor={COLORS.primary}
+            maximumTrackTintColor={COLORS.gray}
+          />
+        </View>
+      )}
 
-      <View style={styles.actionButtons}>
-        <TouchableOpacity
+      {/* Tool Buttons */}
+      <View style={styles.toolsContainer}>
+        <TouchableOpacity 
+          style={[
+            styles.toolButton,
+            activeAdjustment === 'brightness' && styles.activeToolButton
+          ]}
+          onPress={() => setActiveAdjustment(
+            activeAdjustment === 'brightness' ? null : 'brightness'
+          )}
+        >
+          <Wand2 size={24} color={COLORS.white} />
+          <Text style={styles.toolText}>Brightness</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[
+            styles.toolButton,
+            activeAdjustment === 'contrast' && styles.activeToolButton
+          ]}
+          onPress={() => setActiveAdjustment(
+            activeAdjustment === 'contrast' ? null : 'contrast'
+          )}
+        >
+          <Edit2 size={24} color={COLORS.white} />
+          <Text style={styles.toolText}>Contrast</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.toolButton}
+          onPress={rotateImage}
+        >
+          <RotateCcw size={24} color={COLORS.white} />
+          <Text style={styles.toolText}>Rotate</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[
+            styles.toolButton,
+            activeAdjustment === 'saturation' && styles.activeToolButton
+          ]}
+          onPress={() => setActiveAdjustment(
+            activeAdjustment === 'saturation' ? null : 'saturation'
+          )}
+        >
+          <Crop size={24} color={COLORS.white} />
+          <Text style={styles.toolText}>Saturation</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Action Buttons */}
+      <View style={styles.actionContainer}>
+        <TouchableOpacity 
           style={[styles.actionButton, styles.cancelButton]}
           onPress={onCancel}
         >
-          <Text style={styles.actionButtonText}>Cancel</Text>
+          <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.actionButton, styles.saveButton]}
-          onPress={applyAdjustments}
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.resetButton]}
+          onPress={resetAdjustments}
         >
-          <Text style={styles.actionButtonText}>Save</Text>
+          <Text style={styles.actionText}>Reset</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.saveButton]}
+          onPress={processImage}
+          disabled={isProcessing}
+        >
+          <Text style={styles.actionText}>
+            {isProcessing ? 'Processing...' : 'Save'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -277,80 +193,83 @@ export const ImageEditor = ({ imageUri, onSave, onCancel }: ImageEditorProps) =>
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: COLORS.black,
   },
-  toolbar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: TOOLBAR_HEIGHT,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+  imageContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    margin: 20,
   },
-  toolButton: {
-    alignItems: 'center',
-  },
-  toolText: {
-    color: COLORS.white,
-    fontSize: 12,
-    marginTop: 4,
-  },
-  adjustmentPanel: {
-    position: 'absolute',
-    bottom: TOOLBAR_HEIGHT,
-    left: 0,
-    right: 0,
-    padding: 16,
+  image: {
+    width: '100%',
+    height: '100%',
   },
   sliderContainer: {
-    marginBottom: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
   },
-  sliderLabel: {
+  adjustmentLabel: {
     color: COLORS.white,
-    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 10,
   },
   slider: {
     width: '100%',
     height: 40,
   },
-  actionButtons: {
-    position: 'absolute',
-    top: 44,
-    left: 0,
-    right: 0,
+  toolsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    justifyContent: 'space-around',
+    paddingVertical: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
   },
-  actionButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+  toolButton: {
+    alignItems: 'center',
+    padding: 10,
     borderRadius: 8,
   },
+  activeToolButton: {
+    backgroundColor: COLORS.primary,
+  },
+  toolText: {
+    color: COLORS.white,
+    fontSize: 12,
+    marginTop: 5,
+  },
+  actionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+  },
+  actionButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    minWidth: 80,
+    alignItems: 'center',
+  },
   cancelButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: COLORS.darkGray,
+  },
+  resetButton: {
+    backgroundColor: COLORS.gray,
   },
   saveButton: {
     backgroundColor: COLORS.primary,
   },
-  actionButtonText: {
+  actionText: {
     color: COLORS.white,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
-  applyButton: {
-    backgroundColor: COLORS.primary,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  applyButtonText: {
+  cancelText: {
     color: COLORS.white,
     fontSize: 16,
-    fontWeight: '600',
   },
 });

@@ -8,6 +8,7 @@ interface AvatarProps {
   size?: number | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   onPress?: () => void;
   style?: ViewStyle;
+  fallback?: string;
 }
 
 const sizeMap = {
@@ -18,7 +19,7 @@ const sizeMap = {
   xl: 56,
 };
 
-export const Avatar = ({ uri, size = 40, onPress, style }: AvatarProps) => {
+export const Avatar = ({ uri, size = 40, onPress, style, fallback }: AvatarProps) => {
   const sizeValue = typeof size === 'string' ? sizeMap[size] : size;
   const borderRadius = sizeValue / 2;
   const content = uri ? (

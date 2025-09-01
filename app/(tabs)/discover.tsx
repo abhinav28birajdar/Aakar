@@ -1,20 +1,20 @@
-import React, { useState, useCallback } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  FlatList, 
-  RefreshControl,
-  ActivityIndicator,
-  TouchableOpacity
-} from 'react-native';
-import { useRouter } from 'expo-router';
+import { ProjectCard } from '@/components/ProjectCard';
+import { SearchBar } from '@/components/SearchBar';
 import { COLORS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
-import { SearchBar } from '@/components/SearchBar';
-import { ProjectCard } from '@/components/ProjectCard';
 import { useCategories } from '@/hooks/useCategories';
 import { useProjects } from '@/hooks/useProjects';
+import { useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
 export default function DiscoverScreen() {
   const router = useRouter();
@@ -22,9 +22,10 @@ export default function DiscoverScreen() {
   const [refreshing, setRefreshing] = useState(false);
   
   const { projects, isLoading, error, refreshProjects } = useProjects();
+  const { categories } = useCategories();
 
   const handleCategoryPress = (categoryId: string) => {
-    router.push(`/project/${projectId}`);
+    router.push(`/category/${categoryId}` as any);
   };
 
   const handleProjectPress = (projectId: string) => {

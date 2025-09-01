@@ -19,6 +19,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -104,7 +106,7 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  const { theme, isDark } = useTheme();
+  const { isDark } = useTheme();
   
   return (
     <View className={cn("flex-1", isDark ? "bg-dark-background" : "bg-background")}>
@@ -112,9 +114,9 @@ function RootLayoutNav() {
       <Stack
         screenOptions={{
           headerStyle: {
-            backgroundColor: theme === 'dark' ? '#1C1C1E' : '#FFFFFF',
+            backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
           },
-          headerTintColor: theme === 'dark' ? '#FFFFFF' : '#000000',
+          headerTintColor: isDark ? '#FFFFFF' : '#000000',
           headerTitleStyle: {
             fontFamily: 'Inter_600SemiBold',
           },
@@ -171,14 +173,12 @@ function RootLayoutNav() {
           name="project/[id]" 
           options={{ 
             title: 'Project Details',
-            headerBackTitleVisible: false,
           }} 
         />
         <Stack.Screen 
           name="designer/[id]" 
           options={{ 
             title: 'Designer Profile',
-            headerBackTitleVisible: false,
           }} 
         />
       </Stack>

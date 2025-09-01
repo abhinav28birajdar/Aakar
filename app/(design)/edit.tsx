@@ -76,7 +76,7 @@ export default function DesignEditScreen() {
     >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="p-4 min-h-full"
+        contentContainerStyle={{ padding: 16, minHeight: '100%' }}
       >
         <ThemedView className="flex-1 space-y-6">
           {/* Design Preview */}

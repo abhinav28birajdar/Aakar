@@ -23,6 +23,7 @@ interface ButtonProps {
   textStyle?: TextStyle;
   icon?: React.ReactNode;
   iconPosition?: 'left' | 'right';
+  className?: string;
 }
 
 export const Button = ({
@@ -37,6 +38,7 @@ export const Button = ({
   textStyle,
   icon,
   iconPosition = 'left',
+  className,
 }: ButtonProps) => {
   const getButtonStyle = () => {
     switch (variant) {

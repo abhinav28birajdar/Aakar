@@ -1,4 +1,15 @@
 // src/types.ts
+import { User as SupabaseUser } from '@supabase/supabase-js';
+
+export interface ExtendedUser extends SupabaseUser {
+  avatar_url?: string;
+  display_name?: string;
+  bio?: string;
+  website?: string;
+  location?: string;
+  followers?: number;
+  following?: number;
+}
 
 export interface Project {
   id: string;
@@ -8,7 +19,7 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   userId: string;
-  user: User;
+  user: ExtendedUser;
   likes: number;
   isLiked: boolean;
   isSaved: boolean;

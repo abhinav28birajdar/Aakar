@@ -62,7 +62,7 @@ export default function TabLayout() {
         headerRight: () => (
           <TouchableOpacity 
             className="mr-4 w-10 h-10 justify-center items-center"
-            onPress={() => router.push('/notifications')}
+            onPress={() => router.push('/notifications' as any)}
           >
             <View className="relative">
               <Icon 
@@ -130,8 +130,20 @@ export default function TabLayout() {
           title: "Create",
           tabBarButton: (props) => (
             <TouchableOpacity
-              {...props}
-              className="w-16 h-16 bg-primary rounded-full justify-center items-center -mb-8 shadow-xl shadow-primary/50"
+              style={{
+                width: 64,
+                height: 64,
+                backgroundColor: '#007AFF',
+                borderRadius: 32,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 32,
+                shadowColor: '#007AFF',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.5,
+                shadowRadius: 8,
+                elevation: 8,
+              }}
               onPress={() => router.push('/designer/edit')}
             >
               <Icon name="plus" size={36} className="text-white" />
