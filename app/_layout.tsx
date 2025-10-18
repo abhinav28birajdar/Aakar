@@ -2,12 +2,13 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { useTheme } from "@/hooks/useTheme";
-import { cn } from "@/lib/utils/helpers";
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
+import Constants from "expo-constants";
 import { useFonts } from "expo-font";
 import * as Notifications from "expo-notifications";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+// Import StyleSheet for styling with SDK 54
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
@@ -57,7 +58,13 @@ export default function RootLayout() {
           console.warn('Failed to get push token for push notification!');
           return;
         }
-        token = (await Notifications.getExpoPushTokenAsync()).data;
+        
+        // Updated for Expo SDK 54
+        const tokenData = await Notifications.getExpoPushTokenAsync({
+          projectId: Constants.expoConfig.extra.projectId || 'unknown',
+        });
+        
+        token = tokenData.data;
         setExpoPushToken(token);
       } catch (e) {
         console.error('Error registering for push notifications:', e);
@@ -109,7 +116,7 @@ function RootLayoutNav() {
   const { isDark } = useTheme();
   
   return (
-    <View className={cn("flex-1", isDark ? "bg-dark-background" : "bg-background")}>
+    <View style={{ flex: 1, backgroundColor: isDark ? '#1C1C1E' : '#F0F0F0' }}>
       <StatusBar style={isDark ? "light" : "dark"} />
       <Stack
         screenOptions={{

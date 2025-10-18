@@ -44,10 +44,11 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({
 
       // Note: expo-image-manipulator doesn't support brightness, contrast, saturation
       // These would need to be implemented with a different library or custom solution
+      // In SDK 54, we need to handle the format a bit differently
       const result = await ImageManipulator.manipulateAsync(
         imageUri,
         actions,
-        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+        { compress: 0.8, format: 'jpeg' }
       );
 
       onSave(result.uri);

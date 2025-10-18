@@ -3,6 +3,7 @@
     "name": "Aakar",
     "slug": "aakar",
     "version": "1.0.0",
+    "sdkVersion": "54.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "automatic",
@@ -53,7 +54,8 @@
       "EXPO_PUBLIC_SUPABASE_URL": "${EXPO_PUBLIC_SUPABASE_URL}",
       "EXPO_PUBLIC_SUPABASE_ANON_KEY": "${EXPO_PUBLIC_SUPABASE_ANON_KEY}",
       "EXPO_PUBLIC_NEXTJS_API_BASE_URL": "${EXPO_PUBLIC_NEXTJS_API_BASE_URL}",
-      "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "${EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY}"
+      "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "${EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY}",
+      "projectId": "aakar-app-project"
     },
     "owner": "your_expo_account_username"
   }

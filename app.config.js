@@ -1,0 +1,61 @@
+module.exports = {
+  expo: {
+    name: "Aakar",
+    slug: "aakar",
+    version: "1.0.0",
+    sdkVersion: "54.0.0",
+    orientation: "portrait",
+    icon: "./assets/images/icon.png",
+    userInterfaceStyle: "automatic",
+    splash: {
+      image: "./assets/images/splash-icon.png",
+      resizeMode: "contain",
+      backgroundColor: "#EE4D2D"
+    },
+    assetBundlePatterns: [
+      "**/*"
+    ],
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: "com.yourcompany.aakar",
+      buildNumber: "1.0.0",
+      infoPlist: {
+        UIBackgroundModes: [
+          "fetch",
+          "remote-notification"
+        ]
+      }
+    },
+    android: {
+      adaptiveIcon: {
+        foregroundImage: "./assets/images/adaptive-icon.png",
+        backgroundColor: "#EE4D2D"
+      },
+      package: "com.yourcompany.aakar",
+      versionCode: 1
+    },
+    web: {
+      favicon: "./assets/images/favicon.png"
+    },
+    scheme: "aakar",
+    plugins: [
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Aakar to access your photos to share designs.",
+          "cameraPermission": "Allow Aakar to access your camera to take photos."
+        }
+      ],
+      "expo-notifications",
+      "expo-router"
+    ],
+    extra: {
+      EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+      EXPO_PUBLIC_NEXTJS_API_BASE_URL: process.env.EXPO_PUBLIC_NEXTJS_API_BASE_URL,
+      EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+      projectId: "aakar-app-project"
+    }
+  }
+};
