@@ -12,5 +12,5 @@ config.resolver.assetExts.push(
   'cjs'
 );
 
-// Support for NativeWind
+// Support for NativeWind - updated configuration for v4
 module.exports = withNativeWind(config, { input: './global.css' });

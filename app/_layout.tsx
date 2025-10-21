@@ -9,10 +9,11 @@ import * as Notifications from "expo-notifications";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 // Import StyleSheet for styling with SDK 54
-import { StatusBar } from "expo-status-bar";
+// Import global CSS for NativeWind
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import "../global.css";
 
 // Configure notification handling
 Notifications.setNotificationHandler({
