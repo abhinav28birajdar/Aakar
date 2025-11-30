@@ -1,17 +1,19 @@
-import { AuthProvider } from "@/contexts/AuthContext";
-import { NotificationProvider } from "@/contexts/NotificationContext";
-import { ThemeProvider } from "@/contexts/ThemeContext";
-import { useTheme } from "@/hooks/useTheme";
-import { cn } from "@/lib/utils/helpers";
-import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
-import { useFonts } from "expo-font";
-import * as Notifications from "expo-notifications";
-import { Stack } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
-import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useState } from "react";
-import { View } from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useAuth } from '@/lib/store/auth';
+import { useNotifications } from '@/lib/store/notifications';
+import { useTheme } from '@/lib/store/theme';
+import { useApiKeys, apiKeyManager } from '@/lib/config/api-keys';
+import { ApiConfigScreen } from '@/components/ApiConfigScreen';
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { useFonts } from 'expo-font';
+import * as Notifications from 'expo-notifications';
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState, useCallback } from 'react';
+import { View, Text, ActivityIndicator } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // Configure notification handling
 Notifications.setNotificationHandler({
@@ -25,13 +27,20 @@ Notifications.setNotificationHandler({
 });
 
 export const unstable_settings = {
-  initialRouteName: "index",
+  initialRouteName: 'index',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function AppContent() {
+  const { isDark } = useTheme();
+  const { initialize: initAuth, initialized: authInitialized } = useAuth();
+  const { registerForPushNotifications } = useNotifications();
+  const { isConfigured: apiConfigured, loading: apiLoading } = useApiKeys();
+  
+  const [appReady, setAppReady] = useState(false);
+
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -39,15 +48,116 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
-  const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
-  const [notification, setNotification] = useState<Notifications.Notification | undefined>();
+  const initializeApp = useCallback(async () => {
+    try {
+      // Initialize API keys first
+      if (apiConfigured) {
+        await apiKeyManager.initialize();
+        
+        // Initialize auth after API keys are set
+        await initAuth();
+        
+        // Setup push notifications
+        await registerForPushNotifications();
+      }
+    } catch (error) {
+      console.error('App initialization error:', error);
+    } finally {
+      setAppReady(true);
+    }
+  }, [apiConfigured, initAuth, registerForPushNotifications]);
 
   useEffect(() => {
-    // Register for push notifications
-    const registerForPushNotificationsAsync = async () => {
-      let token;
-      try {
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    if (fontsLoaded && !apiLoading) {
+      initializeApp();
+    }
+  }, [fontsLoaded, apiLoading, initializeApp]);
+
+  const onLayoutRootView = useCallback(async () => {
+    if (appReady && fontsLoaded) {
+      await SplashScreen.hideAsync();
+    }
+  }, [appReady, fontsLoaded]);
+
+  // Show loading while fonts are loading or API is initializing
+  if (!fontsLoaded || apiLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#ee4d2d" />
+        <Text style={{ marginTop: 16, fontSize: 16, color: '#666' }}>
+          Loading Aakar...
+        </Text>
+      </View>
+    );
+  }
+
+  // Show API configuration screen if not configured
+  if (!apiConfigured) {
+    return (
+      <ApiConfigScreen 
+        isSetupMode={true}
+        onComplete={() => {
+          // The useApiKeys hook will automatically update when config is saved
+        }}
+      />
+    );
+  }
+
+  // Show loading while app is initializing
+  if (!appReady) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#ee4d2d" />
+        <Text style={{ marginTop: 16, fontSize: 16, color: '#666' }}>
+          Initializing...
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(design)" options={{ headerShown: false }} />
+        <Stack.Screen 
+          name="modal" 
+          options={{ 
+            presentation: 'modal',
+            headerTitle: '',
+            headerStyle: {
+              backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
+            },
+          }} 
+        />
+        <Stack.Screen 
+          name="notifications" 
+          options={{
+            title: 'Notifications',
+            headerStyle: {
+              backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
+            },
+            headerTintColor: isDark ? '#FFFFFF' : '#000000',
+          }} 
+        />
+      </Stack>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+    </View>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <AppContent />
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
+  );
+}
         let finalStatus = existingStatus;
         if (existingStatus !== 'granted') {
           const { status } = await Notifications.requestPermissionsAsync();
