@@ -96,8 +96,8 @@ export const useAppStore = create<AppState>()(
 
       updateProject: (id, updates) => set((state) => {
         const index = state.projects.findIndex(p => p.id === id);
-        if (index !== -1) {
-          Object.assign(state.projects[index], updates);
+        if (index !== -1 && state.projects[index]) {
+          Object.assign(state.projects[index]!, updates);
         }
       }),
 
@@ -179,7 +179,7 @@ export const useAppStore = create<AppState>()(
           }
           
           // Build query
-          let query = supabase
+          let query = supabase()
             .from('projects')
             .select(`
               *,
@@ -243,7 +243,7 @@ export const useAppStore = create<AppState>()(
 
       fetchCategories: async () => {
         try {
-          const { data, error } = await supabase
+          const { data, error } = await supabase()
             .from('categories')
             .select('*')
             .order('name');

@@ -1,22 +1,22 @@
-import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  ScrollView,
+import { Button } from '@/components/Button';
+import { Input } from '@/components/Input';
+import { Logo } from '@/components/Logo';
+import { COLORS } from '@/constants/Colors';
+import { TYPOGRAPHY } from '@/constants/typography';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'expo-router';
+import { Lock, Mail, User } from 'lucide-react-native';
+import { useState } from 'react';
+import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
-  Alert
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Mail, Lock, User } from 'lucide-react-native';
-import { COLORS } from '@/constants/colors';
-import { TYPOGRAPHY } from '@/constants/typography';
-import { Logo } from '@/components/Logo';
-import { Input } from '@/components/Input';
-import { Button } from '@/components/Button';
-import { useAuth } from '@/hooks/useAuth';
 
 export default function RegisterScreen() {
   const router = useRouter();

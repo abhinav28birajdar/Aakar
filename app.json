@@ -22,7 +22,9 @@
         "UIBackgroundModes": [
           "fetch",
           "remote-notification"
-        ]
+        ],
+        "NSCameraUsageDescription": "Allow Aakar to access your camera to take photos.",
+        "NSPhotoLibraryUsageDescription": "Allow Aakar to access your photos to share designs."
       }
     },
     "android": {
@@ -31,7 +33,14 @@
         "backgroundColor": "#EE4D2D"
       },
       "package": "com.yourcompany.aakar",
-      "versionCode": 1
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE"
+      ]
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -46,8 +55,18 @@
           "cameraPermission": "Allow Aakar to access your camera to take photos."
         }
       ],
-      "expo-notifications",
-      "expo-router"
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#EE4D2D",
+          "defaultChannel": "default"
+        }
+      ],
+      "expo-router",
+      [
+        "expo-secure-store"
+      ]
     ],
     "extra": {
       "EXPO_PUBLIC_SUPABASE_URL": "${EXPO_PUBLIC_SUPABASE_URL}",
