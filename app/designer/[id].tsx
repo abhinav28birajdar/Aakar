@@ -1,23 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  ScrollView, 
-  Image, 
-  TouchableOpacity,
-  ActivityIndicator,
-  useWindowDimensions,
-  FlatList
-} from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
-import { MapPin, MessageCircle } from 'lucide-react-native';
+import { ProjectCard } from '@/components/ProjectCard';
+import { Button } from '@/components/ui/Button';
 import { COLORS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
-import { Button } from '@/components/Button';
-import { ProjectCard } from '@/components/ProjectCard';
-import { useUser } from '@/hooks/useUser';
 import { useProjects } from '@/hooks/useProjects';
+import { useUser } from '@/hooks/useUser';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import { MapPin } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    useWindowDimensions,
+    View
+} from 'react-native';
 
 export default function DesignerProfileScreen() {
   const { id } = useLocalSearchParams();

@@ -103,6 +103,10 @@ class ApiKeyManager {
     return this.keys;
   }
 
+  getConfig() {
+    return this.getKeys();
+  }
+
   getSupabaseConfig() {
     const keys = this.getKeys();
     return {

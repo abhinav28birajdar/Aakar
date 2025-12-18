@@ -1,6 +1,6 @@
-import { Button } from '@/components/Button';
-import { Input } from '@/components/Input';
 import { Logo } from '@/components/Logo';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { COLORS } from '@/constants/Colors';
 import { TYPOGRAPHY } from '@/constants/typography';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,14 +8,14 @@ import { useRouter } from 'expo-router';
 import { Lock, Mail, User } from 'lucide-react-native';
 import { useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 export default function RegisterScreen() {

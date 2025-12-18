@@ -1,12 +1,12 @@
 
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Palette, Briefcase } from 'lucide-react-native';
+import { Logo } from '@/components/Logo';
+import { Button } from '@/components/ui/Button';
 import { COLORS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
-import { Logo } from '@/components/Logo';
-import { Button } from '@/components/Button';
+import { useRouter } from 'expo-router';
+import { Briefcase, Palette } from 'lucide-react-native';
+import { useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Role = 'designer' | 'client' | null;
 

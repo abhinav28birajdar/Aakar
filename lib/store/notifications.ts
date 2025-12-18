@@ -80,7 +80,7 @@ export const useNotificationStore = create<NotificationState>()(
         const notificationIndex = state.notifications.findIndex(n => n.id === id);
         if (notificationIndex !== -1) {
           const notification = state.notifications[notificationIndex];
-          if (!notification.read) {
+          if (notification && !notification.read) {
             state.unreadCount = Math.max(0, state.unreadCount - 1);
           }
           state.notifications.splice(notificationIndex, 1);

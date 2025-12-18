@@ -1,22 +1,22 @@
-import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Alert
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { Mail } from 'lucide-react-native';
+import { Logo } from '@/components/Logo';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { COLORS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
-import { Logo } from '@/components/Logo';
-import { Input } from '@/components/Input';
-import { Button } from '@/components/Button';
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'expo-router';
+import { Mail } from 'lucide-react-native';
+import { useState } from 'react';
+import {
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();

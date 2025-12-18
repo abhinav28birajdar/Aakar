@@ -1,15 +1,15 @@
-import { Button } from '@/components/Button';
 import { ImageEditor } from '@/components/ImageEditor';
-import { Input } from '@/components/Input';
 import { ThemedView } from '@/components/ThemedView';
+import { Button } from '@/components/ui/Button';
 import Icon from '@/components/ui/Icon';
+import { Input } from '@/components/ui/Input';
 import ThemedText from '@/components/ui/ThemedText';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { IS_IOS } from '@/lib/utils/env';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
 
 export default function DesignEditScreen() {

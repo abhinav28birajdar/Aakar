@@ -1,6 +1,6 @@
-import { Button } from '@/components/Button';
+import { Button } from '@/components/ui/Button';
 import Icon from '@/components/ui/Icon';
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
     Animated,
     Dimensions,

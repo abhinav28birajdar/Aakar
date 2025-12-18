@@ -1,10 +1,9 @@
-import { Button } from '@/components/Button';
 import { ProjectCard } from '@/components/ProjectCard';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { Button } from '@/components/ui/Button';
 import { projects } from '@/mocks/projects';
 import { router, useLocalSearchParams } from 'expo-router';
-import React from 'react';
 import { FlatList, StyleSheet } from 'react-native';
 
 export default function CategoryScreen() {

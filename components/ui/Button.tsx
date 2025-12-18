@@ -8,33 +8,56 @@ import {
     TextStyle,
     TouchableOpacity,
     TouchableOpacityProps,
-    View,
     ViewStyle,
 } from 'react-native';
 
+// Unified Button Props - supports both old and new API patterns
 export interface ButtonProps extends Omit<TouchableOpacityProps, 'style'> {
+  // Content
+  title?: string; // Legacy support
+  children?: ReactNode;
+  
+  // Variants
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive';
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'small' | 'md' | 'medium' | 'lg' | 'large' | 'xl';
+  
+  // States
   loading?: boolean;
   disabled?: boolean;
+  
+  // Layout
   fullWidth?: boolean;
+  
+  // Icons
+  icon?: ReactNode; // Legacy support
+  iconPosition?: 'left' | 'right'; // Legacy support
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
-  children: ReactNode;
+  
+  // Styling
   style?: ViewStyle;
   textStyle?: TextStyle;
+  className?: string; // Legacy support
+  
+  // Animation
   animate?: boolean;
+  
+  // Handlers
+  onPress: () => void;
 }
 
 export const Button = forwardRef<TouchableOpacity, ButtonProps>(({
+  title,
+  children,
   variant = 'primary',
   size = 'md',
   loading = false,
   disabled = false,
   fullWidth = false,
+  icon,
+  iconPosition = 'left',
   leftIcon,
   rightIcon,
-  children,
   style,
   textStyle,
   animate = true,
@@ -45,14 +68,28 @@ export const Button = forwardRef<TouchableOpacity, ButtonProps>(({
 }, ref) => {
   const { isDark, colors: themeColors, reducedMotion } = useTheme();
 
+  // Normalize size prop
+  const normalizedSize = 
+    size === 'small' ? 'sm' : 
+    size === 'medium' ? 'md' : 
+    size === 'large' ? 'lg' : 
+    size;
+
+  // Handle legacy icon props
+  const effectiveLeftIcon = leftIcon || (icon && iconPosition === 'left' ? icon : undefined);
+  const effectiveRightIcon = rightIcon || (icon && iconPosition === 'right' ? icon : undefined);
+  
+  // Handle content (title vs children)
+  const content = children || title;
+
   const getVariantStyles = (): ViewStyle => {
     const baseStyle: ViewStyle = {
       borderRadius: borderRadius.lg,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      height: components.button.height[size],
-      paddingHorizontal: size === 'sm' ? 12 : size === 'md' ? 16 : size === 'lg' ? 20 : 24,
+      height: components.button.height[normalizedSize as 'sm' | 'md' | 'lg' | 'xl'] || components.button.height.md,
+      paddingHorizontal: normalizedSize === 'sm' ? 12 : normalizedSize === 'md' ? 16 : normalizedSize === 'lg' ? 20 : 24,
     };
 
     switch (variant) {
@@ -108,7 +145,7 @@ export const Button = forwardRef<TouchableOpacity, ButtonProps>(({
   const getTextStyles = (): TextStyle => {
     const baseTextStyle: TextStyle = {
       fontFamily: 'Inter_600SemiBold',
-      fontSize: components.button.fontSize[size],
+      fontSize: components.button.fontSize[normalizedSize as 'sm' | 'md' | 'lg' | 'xl'] || components.button.fontSize.md,
       fontWeight: '600',
     };
 
@@ -120,29 +157,18 @@ export const Button = forwardRef<TouchableOpacity, ButtonProps>(({
         };
       
       case 'secondary':
+      case 'ghost':
         return {
           ...baseTextStyle,
           color: disabled 
             ? colors.gray[400] 
-            : isDark 
-              ? themeColors.text.primary 
-              : themeColors.text.primary,
+            : themeColors.text.primary,
         };
       
       case 'outline':
         return {
           ...baseTextStyle,
           color: disabled ? colors.gray[400] : colors.primary[500],
-        };
-      
-      case 'ghost':
-        return {
-          ...baseTextStyle,
-          color: disabled 
-            ? colors.gray[400] 
-            : isDark 
-              ? themeColors.text.primary 
-              : themeColors.text.primary,
         };
       
       case 'destructive':
@@ -156,51 +182,43 @@ export const Button = forwardRef<TouchableOpacity, ButtonProps>(({
     }
   };
 
-  const handlePressIn = (event: any) => {
-    onPressIn?.(event);
-  };
-
-  const handlePressOut = (event: any) => {
-    onPressOut?.(event);
-  };
-
   const isDisabled = disabled || loading;
 
   const buttonContent = (
-    <View
-      style={[
-        getVariantStyles(),
-        fullWidth && { width: '100%' },
-        style,
-      ]}
-    >
+    <>
       {loading && (
         <ActivityIndicator
           size="small"
           color={variant === 'primary' || variant === 'destructive' ? '#ffffff' : colors.primary[500]}
-          style={{ marginRight: children ? 8 : 0 }}
+          style={{ marginRight: content ? 8 : 0 }}
         />
       )}
       
-      {leftIcon && !loading && (
-        <View style={{ marginRight: children ? 8 : 0 }}>
-          {leftIcon}
-        </View>
-      )}
-      
-      {children && (
-        <Text style={[getTextStyles(), textStyle]}>
-          {children}
+      {effectiveLeftIcon && !loading && content && (
+        <Text style={{ marginRight: 8 }}>
+          {effectiveLeftIcon}
         </Text>
       )}
       
-      {rightIcon && !loading && (
-        <View style={{ marginLeft: children ? 8 : 0 }}>
-          {rightIcon}
-        </View>
+      {content && (
+        <Text style={[getTextStyles(), textStyle]}>
+          {content}
+        </Text>
       )}
-    </View>
+      
+      {effectiveRightIcon && !loading && content && (
+        <Text style={{ marginLeft: 8 }}>
+          {effectiveRightIcon}
+        </Text>
+      )}
+    </>
   );
+
+  const buttonStyle = [
+    getVariantStyles(),
+    fullWidth && { width: '100%' },
+    style,
+  ];
 
   if (animate && !reducedMotion) {
     return (
@@ -211,14 +229,16 @@ export const Button = forwardRef<TouchableOpacity, ButtonProps>(({
           type: 'timing',
           duration: 150,
         }}
+        style={fullWidth ? { width: '100%' } : undefined}
       >
         <TouchableOpacity
           ref={ref}
           onPress={onPress}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
           disabled={isDisabled}
           activeOpacity={0.8}
+          style={buttonStyle}
           {...props}
         >
           {buttonContent}
@@ -231,10 +251,11 @@ export const Button = forwardRef<TouchableOpacity, ButtonProps>(({
     <TouchableOpacity
       ref={ref}
       onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
       disabled={isDisabled}
       activeOpacity={0.8}
+      style={buttonStyle}
       {...props}
     >
       {buttonContent}
@@ -243,3 +264,5 @@ export const Button = forwardRef<TouchableOpacity, ButtonProps>(({
 });
 
 Button.displayName = 'Button';
+
+export default Button;

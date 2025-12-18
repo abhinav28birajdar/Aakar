@@ -1,5 +1,6 @@
 import { borderRadius, colors, components } from '@/lib/design-system/tokens';
 import { useTheme } from '@/lib/store/theme';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { forwardRef, ReactNode, useState } from 'react';
 import {
@@ -11,8 +12,8 @@ import {
     View,
     ViewStyle,
 } from 'react-native';
-import Icon from './Icon';
 
+// Unified Input Props - supports both old and new API patterns
 export interface InputProps extends Omit<TextInputProps, 'style'> {
   label?: string;
   error?: string;
@@ -22,6 +23,7 @@ export interface InputProps extends Omit<TextInputProps, 'style'> {
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
   secureTextEntry?: boolean;
+  isPassword?: boolean; // Legacy support
   disabled?: boolean;
   required?: boolean;
   containerStyle?: ViewStyle;
@@ -39,6 +41,7 @@ export const Input = forwardRef<TextInput, InputProps>(({
   leftIcon,
   rightIcon,
   secureTextEntry = false,
+  isPassword = false, // Legacy support
   disabled = false,
   required = false,
   containerStyle,
@@ -51,7 +54,10 @@ export const Input = forwardRef<TextInput, InputProps>(({
 }, ref) => {
   const { isDark, colors: themeColors, reducedMotion } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
-  const [isPasswordVisible, setIsPasswordVisible] = useState(!secureTextEntry);
+  
+  // Handle both secureTextEntry and isPassword props
+  const isSecureInput = secureTextEntry || isPassword;
+  const [isPasswordVisible, setIsPasswordVisible] = useState(!isSecureInput);
 
   const handleFocus = (event: any) => {
     setIsFocused(true);
@@ -147,9 +153,7 @@ export const Input = forwardRef<TextInput, InputProps>(({
       fontFamily: 'Inter_400Regular',
       color: disabled 
         ? colors.gray[400] 
-        : isDark 
-          ? themeColors.text.primary 
-          : themeColors.text.primary,
+        : themeColors.text.primary,
       paddingHorizontal: 0,
       paddingVertical: 0,
     };
@@ -167,28 +171,28 @@ export const Input = forwardRef<TextInput, InputProps>(({
         ref={ref}
         style={[getInputStyles(), inputStyle]}
         placeholderTextColor={isDark ? colors.gray[500] : colors.gray[400]}
-        secureTextEntry={secureTextEntry && !isPasswordVisible}
+        secureTextEntry={isSecureInput && !isPasswordVisible}
         editable={!disabled}
         onFocus={handleFocus}
         onBlur={handleBlur}
         {...props}
       />
       
-      {secureTextEntry && (
+      {isSecureInput && (
         <TouchableOpacity
           onPress={togglePasswordVisibility}
           style={{ marginLeft: 8 }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Icon
-            name={isPasswordVisible ? 'eye-off' : 'eye'}
-            size={20}
-            color={isDark ? colors.gray[500] : colors.gray[400]}
-          />
+          {isPasswordVisible ? (
+            <EyeOff size={20} color={isDark ? colors.gray[500] : colors.gray[400]} />
+          ) : (
+            <Eye size={20} color={isDark ? colors.gray[500] : colors.gray[400]} />
+          )}
         </TouchableOpacity>
       )}
       
-      {rightIcon && !secureTextEntry && (
+      {rightIcon && !isSecureInput && (
         <View style={{ marginLeft: 8 }}>
           {rightIcon}
         </View>
@@ -197,7 +201,7 @@ export const Input = forwardRef<TextInput, InputProps>(({
   );
 
   const content = (
-    <View>
+    <View style={{ marginBottom: 16, width: '100%' }}>
       {label && (
         <View style={{ marginBottom: 6, flexDirection: 'row', alignItems: 'center' }}>
           <Text
@@ -205,7 +209,7 @@ export const Input = forwardRef<TextInput, InputProps>(({
               {
                 fontSize: 14,
                 fontFamily: 'Inter_500Medium',
-                color: isDark ? themeColors.text.secondary : themeColors.text.secondary,
+                color: themeColors.text.secondary,
               },
               labelStyle,
             ]}
@@ -247,7 +251,7 @@ export const Input = forwardRef<TextInput, InputProps>(({
               style={{
                 fontSize: 12,
                 fontFamily: 'Inter_400Regular',
-                color: isDark ? themeColors.text.tertiary : themeColors.text.tertiary,
+                color: themeColors.text.tertiary,
               }}
             >
               {hint}
@@ -277,3 +281,5 @@ export const Input = forwardRef<TextInput, InputProps>(({
 });
 
 Input.displayName = 'Input';
+
+export default Input;

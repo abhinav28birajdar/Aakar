@@ -1,8 +1,7 @@
-import { Button } from '@/components/Button';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { Button } from '@/components/ui/Button';
 import { router } from 'expo-router';
-import React from 'react';
 import { FlatList, StyleSheet } from 'react-native';
 
 // Mock notification data

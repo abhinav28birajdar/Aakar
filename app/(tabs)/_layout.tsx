@@ -3,12 +3,11 @@ import { Logo } from '@/components/Logo';
 import { TabBar } from '@/components/TabBar';
 import Icon from '@/components/ui/Icon';
 import ThemedText from '@/components/ui/ThemedText';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNotifications } from '@/contexts/NotificationContext';
-import { useTheme } from '@/hooks/useTheme';
+import { useAuth } from '@/lib/store/auth';
+import { useNotifications } from '@/lib/store/notifications';
+import { useTheme } from '@/lib/store/theme';
 import { cn } from '@/lib/utils/helpers';
 import { Tabs, useRouter } from 'expo-router';
-import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 
 export default function TabLayout() {
@@ -189,6 +188,34 @@ export default function TabLayout() {
               )}
             </View>
           ),
+        }}
+      />
+
+      {/* Settings Tab */}
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Settings",
+          tabBarIcon: ({ focused }) => (
+            <View className={cn("items-center", focused && "mt-[-5px]")}>
+              <Icon 
+                name="settings" 
+                size={focused ? 28 : 24}
+                className={focused ? "text-primary" : "text-muted-foreground"}
+              />
+              {focused && (
+                <View className="w-2 h-2 rounded-full bg-primary mt-1" />
+              )}
+            </View>
+          ),
+        }}
+      />
+
+      {/* Hidden tabs for proper routing */}
+      <Tabs.Screen
+        name="explore"
+        options={{
+          href: null, // Hide from tab bar
         }}
       />
     </Tabs>

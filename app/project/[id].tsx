@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  ScrollView, 
-  Image, 
-  TouchableOpacity,
-  ActivityIndicator,
-  useWindowDimensions
-} from 'react-native';
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { Heart, Share2, MessageCircle, ArrowLeft, User } from 'lucide-react-native';
+import { Avatar } from '@/components/Avatar';
+import { Button } from '@/components/ui/Button';
 import { COLORS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
-import { Avatar } from '@/components/Avatar';
-import { Button } from '@/components/Button';
 import { useProjects } from '@/hooks/useProjects';
 import { useUser } from '@/hooks/useUser';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Heart, MessageCircle, Share2 } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    useWindowDimensions,
+    View
+} from 'react-native';
 
 export default function ProjectDetailScreen() {
   const { id } = useLocalSearchParams();

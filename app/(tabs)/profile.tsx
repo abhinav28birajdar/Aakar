@@ -1,25 +1,25 @@
-import React, { useState, useCallback } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  ScrollView, 
-  TouchableOpacity, 
-  Image,
-  RefreshControl,
-  ActivityIndicator,
-  Alert
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-import { Camera, MapPin, Edit2, LogOut } from 'lucide-react-native';
+import { ProjectCard } from '@/components/ProjectCard';
+import { Button } from '@/components/ui/Button';
 import { COLORS } from '@/constants/colors';
 import { TYPOGRAPHY } from '@/constants/typography';
-import { Button } from '@/components/Button';
-import { ProjectCard } from '@/components/ProjectCard';
-import { useUser } from '@/hooks/useUser';
-import { useProjects } from '@/hooks/useProjects';
 import { useAuth } from '@/hooks/useAuth';
+import { useProjects } from '@/hooks/useProjects';
+import { useUser } from '@/hooks/useUser';
+import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
+import { Camera, MapPin } from 'lucide-react-native';
+import { useCallback, useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    Image,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
 export default function ProfileScreen() {
   const router = useRouter();
