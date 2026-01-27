@@ -1,102 +1,103 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    SafeAreaView,
-    FlatList,
-    TouchableOpacity,
-    TextInput,
-    KeyboardAvoidingView,
-    Platform
-} from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useTheme } from '../../contexts/ThemeContext';
-import { ArrowLeft, MoreHorizontal, Send, Image as ImageIcon, Plus } from 'lucide-react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { useTheme } from '../../src/hooks/useTheme';
+import { ArrowLeft, MoreVertical, Send, Image as ImageIcon, Smile, Mic, CheckCheck } from 'lucide-react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
-import { MOCK_USERS } from '../../constants/mockData';
+import { MOCK_USERS } from '../../src/constants/mockData';
+import { MotiView } from 'moti';
+
+const MOCK_CHAT_MESSAGES = [
+    { id: '1', text: 'Hi Alex! I saw your recent dashboard design.', sender: 'other', time: '10:00 AM' },
+    { id: '2', text: 'Hey Sarah! Thanks so much. Glad you liked it.', sender: 'me', time: '10:02 AM' },
+    { id: '3', text: 'The color palette is actually very refreshing. What font did you use?', sender: 'other', time: '10:05 AM' },
+    { id: '4', text: 'I used SF Pro for the primary text and Outfit for headings.', sender: 'me', time: '10:06 AM' },
+    { id: '5', text: 'That explains the premium feel!', sender: 'other', time: '10:07 AM' },
+];
 
 export default function ChatScreen() {
-    const { id } = useLocalSearchParams();
-    const { colors } = useTheme();
+    const { colors, typography, spacing } = useTheme();
     const router = useRouter();
-    const user = MOCK_USERS.find(u => u.id === id) || MOCK_USERS[1];
+    const { id } = useLocalSearchParams();
     const [message, setMessage] = useState('');
+    const user = MOCK_USERS[1]; // Sarah Chen
 
-    const messages = [
-        { id: '1', text: 'Hi Alex! Love your work.', sender: 'them', time: '10:00 AM' },
-        { id: '2', text: 'Hey Sarah, thank you so much! Really appreciate it.', sender: 'me', time: '10:05 AM' },
-        { id: '3', text: 'Would you be open for a quick collaboration?', sender: 'them', time: '10:10 AM' },
-    ];
+    const renderMessage = ({ item }: { item: any }) => {
+        const isMe = item.sender === 'me';
+        return (
+            <View style={[styles.messageRow, { justifyContent: isMe ? 'flex-end' : 'flex-start' }]}>
+                {!isMe && <Image source={{ uri: user.avatar_url }} style={styles.chatAvatar} />}
+                <View style={[
+                    styles.messageBubble,
+                    {
+                        backgroundColor: isMe ? colors.primary : colors.surfaceAlt,
+                        borderBottomLeftRadius: isMe ? 20 : 4,
+                        borderBottomRightRadius: isMe ? 4 : 20,
+                    }
+                ]}>
+                    <Text style={[styles.messageText, { color: isMe ? 'white' : colors.text }]}>{item.text}</Text>
+                    <View style={styles.messageFooter}>
+                        <Text style={[styles.messageTime, { color: isMe ? 'rgba(255,255,255,0.7)' : colors.textSecondary }]}>{item.time}</Text>
+                        {isMe && <CheckCheck size={14} color="rgba(255,255,255,0.7)" style={{ marginLeft: 4 }} />}
+                    </View>
+                </View>
+            </View>
+        );
+    };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={[styles.header, { borderBottomColor: colors.border }]}>
-                <View style={styles.headerLeft}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <ArrowLeft size={24} color={colors.text} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.userInfo} onPress={() => router.push(`/profile/${user.username}`)}>
-                        <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
-                        <View>
-                            <Text style={[styles.name, { color: colors.text }]}>{user.full_name}</Text>
-                            <Text style={[styles.status, { color: colors.success }]}>Online</Text>
-                        </View>
-                    </TouchableOpacity>
-                </View>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
+                    <ArrowLeft size={24} color={colors.text} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push(`/profile/${user.username}`)} style={styles.headerUser}>
+                    <Image source={{ uri: user.avatar_url }} style={styles.headerAvatar} />
+                    <View>
+                        <Text style={[styles.headerName, { color: colors.text }]}>{user.full_name}</Text>
+                        <Text style={[styles.headerStatus, { color: colors.success }]}>Online</Text>
+                    </View>
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.iconButton}>
-                    <MoreHorizontal size={24} color={colors.text} />
+                    <MoreVertical size={24} color={colors.text} />
                 </TouchableOpacity>
             </View>
 
             <FlatList
-                data={messages}
+                data={MOCK_CHAT_MESSAGES}
+                renderItem={renderMessage}
                 keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.messageList}
-                renderItem={({ item }) => (
-                    <View style={[
-                        styles.messageItem,
-                        item.sender === 'me' ? styles.myMessage : styles.theirMessage
-                    ]}>
-                        <View style={[
-                            styles.bubble,
-                            { backgroundColor: item.sender === 'me' ? colors.primary : colors.surfaceAlt }
-                        ]}>
-                            <Text style={[
-                                styles.messageText,
-                                { color: item.sender === 'me' ? 'white' : colors.text }
-                            ]}>
-                                {item.text}
-                            </Text>
-                        </View>
-                        <Text style={[styles.time, { color: colors.textSecondary }]}>{item.time}</Text>
-                    </View>
-                )}
+                contentContainerStyle={styles.chatList}
+                showsVerticalScrollIndicator={false}
             />
 
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-            >
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={80}>
                 <View style={[styles.inputContainer, { borderTopColor: colors.border }]}>
-                    <TouchableOpacity style={styles.attachButton}>
-                        <ImageIcon size={24} color={colors.textSecondary} />
+                    <TouchableOpacity style={styles.inputAction}>
+                        <PlusSquare color={colors.textSecondary} size={24} />
                     </TouchableOpacity>
                     <View style={[styles.inputWrapper, { backgroundColor: colors.surfaceAlt }]}>
                         <TextInput
-                            style={[styles.input, { color: colors.text }]}
                             placeholder="Type a message..."
-                            placeholderTextColor={colors.textMuted}
+                            placeholderTextColor={colors.textSecondary}
+                            style={[styles.input, { color: colors.text }]}
                             value={message}
                             onChangeText={setMessage}
                             multiline
                         />
+                        <TouchableOpacity style={styles.emojiButton}>
+                            <Smile size={24} color={colors.textSecondary} />
+                        </TouchableOpacity>
                     </View>
                     <TouchableOpacity
                         style={[styles.sendButton, { backgroundColor: colors.primary }]}
                         onPress={() => setMessage('')}
                     >
-                        <Send size={20} color="white" />
+                        {message.length > 0 ? (
+                            <Send size={20} color="white" />
+                        ) : (
+                            <Mic size={20} color="white" />
+                        )}
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
@@ -104,45 +105,19 @@ export default function ChatScreen() {
     );
 }
 
+const PlusSquare = ImageIcon; // Fallback for simple icon
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 12,
+        padding: 16,
+        paddingHorizontal: 8,
         borderBottomWidth: 1,
-    },
-    headerLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    backButton: {
-        width: 44,
-        height: 44,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    userInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginLeft: 4,
-    },
-    avatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 16,
-        marginRight: 10,
-    },
-    name: {
-        fontSize: 16,
-        fontWeight: '700',
-    },
-    status: {
-        fontSize: 12,
-        fontWeight: '600',
+        borderBottomColor: 'transparent', // Can change on scroll
     },
     iconButton: {
         width: 44,
@@ -150,59 +125,92 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    messageList: {
-        padding: 16,
+    headerUser: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
     },
-    messageItem: {
-        marginBottom: 20,
-        maxWidth: '80%',
+    headerAvatar: {
+        width: 40,
+        height: 40,
+        borderRadius: 14,
     },
-    myMessage: {
-        alignSelf: 'flex-end',
+    headerName: {
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    headerStatus: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    chatList: {
+        padding: 24,
+        paddingBottom: 40,
+        gap: 20,
+    },
+    messageRow: {
+        flexDirection: 'row',
         alignItems: 'flex-end',
+        gap: 10,
     },
-    theirMessage: {
-        alignSelf: 'flex-start',
-        alignItems: 'flex-start',
+    chatAvatar: {
+        width: 32,
+        height: 32,
+        borderRadius: 12,
+        marginBottom: 2,
     },
-    bubble: {
-        padding: 12,
+    messageBubble: {
+        maxWidth: '80%',
+        padding: 14,
+        paddingHorizontal: 16,
         borderRadius: 20,
-        marginBottom: 4,
     },
     messageText: {
         fontSize: 15,
-        lineHeight: 20,
+        lineHeight: 22,
     },
-    time: {
+    messageFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        marginTop: 4,
+    },
+    messageTime: {
         fontSize: 10,
     },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
+        padding: 16,
+        paddingHorizontal: 20,
         gap: 12,
+        borderTopWidth: 1,
     },
-    attachButton: {
-        width: 44,
-        height: 44,
-        justifyContent: 'center',
-        alignItems: 'center',
+    inputAction: {
+        padding: 4,
     },
     inputWrapper: {
         flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
         borderRadius: 24,
         paddingHorizontal: 16,
-        paddingVertical: 8,
-        maxHeight: 100,
+        minHeight: 48,
+        maxHeight: 120,
     },
     input: {
+        flex: 1,
         fontSize: 15,
+        paddingVertical: 10,
+    },
+    emojiButton: {
+        padding: 4,
     },
     sendButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 48,
+        height: 48,
+        borderRadius: 24,
         justifyContent: 'center',
         alignItems: 'center',
     },

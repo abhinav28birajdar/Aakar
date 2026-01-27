@@ -1,125 +1,120 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity } from 'react-native';
-import { useTheme } from '../../contexts/ThemeContext';
-import { MOCK_NOTIFICATIONS, MOCK_MESSAGES } from '../../constants/mockData';
-import { TYPOGRAPHY } from '../../constants/theme';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, ScrollView } from 'react-native';
+import { useTheme } from '../../src/hooks/useTheme';
+import { Bell, MessageSquare, Heart, UserPlus, MessageCircle, Filter, Search } from 'lucide-react-native';
 import { Image } from 'expo-image';
-import { MessageSquare, Heart, UserPlus, ChevronRight } from 'lucide-react-native';
+import { MOCK_NOTIFICATIONS, MOCK_USERS } from '../../src/constants/mockData';
+import { MotiView } from 'moti';
 import { useRouter } from 'expo-router';
 
 export default function ActivityScreen() {
-    const { colors } = useTheme();
+    const { colors, typography, spacing } = useTheme();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'activity' | 'messages'>('activity');
+    const [activeTab, setActiveTab] = useState('activity');
 
-    const getIcon = (type: string) => {
-        switch (type) {
-            case 'like':
-                return <Heart size={14} color="white" fill="white" />;
-            case 'comment':
-                return <MessageSquare size={14} color="white" fill="white" />;
-            case 'follow':
-                return <UserPlus size={14} color="white" />;
-            default:
-                return null;
-        }
-    };
-
-    const getIconBg = (type: string) => {
-        switch (type) {
-            case 'like':
-                return '#f43f5e';
-            case 'comment':
-                return '#3b82f6';
-            case 'follow':
-                return '#10b981';
-            default:
-                return colors.primary;
-        }
-    };
-
-    const renderActivityItem = ({ item }: { item: any }) => (
-        <TouchableOpacity style={[styles.notificationItem, { borderBottomColor: colors.border }]}>
-            <View style={styles.avatarContainer}>
-                <Image source={{ uri: item.user.avatar_url }} style={styles.avatar} />
-                <View style={[styles.typeIcon, { backgroundColor: getIconBg(item.type) }]}>
-                    {getIcon(item.type)}
-                </View>
-            </View>
-
-            <View style={styles.content}>
-                <Text style={[styles.text, { color: colors.text }]}>
-                    <Text style={{ fontWeight: '700' }}>{item.user.username}</Text>
-                    {item.type === 'like' && ' liked your post'}
-                    {item.type === 'comment' && ` commented: "${item.content}"`}
-                    {item.type === 'follow' && ' started following you'}
-                    {item.type === 'mention' && ` mentioned you: "${item.content}"`}
-                </Text>
-                <Text style={[styles.time, { color: colors.textSecondary }]}>{item.timestamp}</Text>
-            </View>
-
-            {item.post && (
-                <Image source={{ uri: item.post.image_url }} style={styles.postPreview} />
-            )}
-        </TouchableOpacity>
-    );
-
-    const renderMessageItem = ({ item }: { item: any }) => (
-        <TouchableOpacity
+    const renderNotification = ({ item, index }: { item: any, index: number }) => (
+        <MotiView
+            from={{ opacity: 0, translateX: -20 }}
+            animate={{ opacity: 1, translateX: 0 }}
+            transition={{ delay: index * 100 }}
             style={[styles.notificationItem, { borderBottomColor: colors.border }]}
-            onPress={() => router.push(`/messages/${item.id}`)}
         >
-            <Image source={{ uri: item.sender.avatar_url }} style={styles.avatar} />
-            <View style={styles.content}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={[styles.messageSender, { color: colors.text }]}>{item.sender.full_name}</Text>
+            <TouchableOpacity style={styles.notificationContent}>
+                <View style={styles.avatarContainer}>
+                    <Image source={{ uri: item.user.avatar_url }} style={styles.avatar} />
+                    <View style={[styles.typeIcon, { backgroundColor: item.type === 'like' ? colors.error : item.type === 'follow' ? colors.success : colors.primary }]}>
+                        {item.type === 'like' ? <Heart size={10} color="white" fill="white" /> :
+                            item.type === 'follow' ? <UserPlus size={10} color="white" /> :
+                                <MessageCircle size={10} color="white" fill="white" />}
+                    </View>
+                </View>
+                <View style={styles.textContainer}>
+                    <Text style={[styles.notificationText, { color: colors.text }]}>
+                        <Text style={{ fontWeight: '700' }}>{item.user.username}</Text>
+                        {item.type === 'like' ? ' liked your post' :
+                            item.type === 'follow' ? ' started following you' :
+                                ' commented on your post'}
+                    </Text>
                     <Text style={[styles.time, { color: colors.textSecondary }]}>{item.timestamp}</Text>
                 </View>
-                <Text style={[styles.messagePreview, { color: item.unreadCount > 0 ? colors.text : colors.textSecondary, fontWeight: item.unreadCount > 0 ? '700' : '400' }]} numberOfLines={1}>
-                    {item.unreadCount > 0 ? '● ' : ''}{item.lastMessage}
+                {item.post && (
+                    <Image source={{ uri: item.post.image_url }} style={styles.postThumb} />
+                )}
+            </TouchableOpacity>
+        </MotiView>
+    );
+
+    const renderMessageItem = ({ item, index }: { item: any, index: number }) => (
+        <TouchableOpacity
+            style={[styles.messageItem, { borderBottomColor: colors.border }]}
+            onPress={() => router.push({ pathname: '/messages/[id]', params: { id: item.id } })}
+        >
+            <View style={styles.avatarContainer}>
+                <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
+                <View style={[styles.onlineBadge, { backgroundColor: colors.success }]} />
+            </View>
+            <View style={styles.textContainer}>
+                <View style={styles.messageHeader}>
+                    <Text style={[styles.userName, { color: colors.text }]}>{item.full_name}</Text>
+                    <Text style={[styles.time, { color: colors.textSecondary }]}>2m ago</Text>
+                </View>
+                <Text numberOfLines={1} style={[styles.lastMessage, { color: colors.textSecondary }]}>
+                    Hey! I saw your latest UI design and I'm really impressed...
                 </Text>
             </View>
-            <ChevronRight size={16} color={colors.textSecondary} />
+            <View style={[styles.unreadBadge, { backgroundColor: colors.primary }]}>
+                <Text style={styles.unreadText}>2</Text>
+            </View>
         </TouchableOpacity>
     );
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
             <View style={styles.header}>
-                <Text style={[TYPOGRAPHY.h1, { color: colors.text }]}>Inbox</Text>
-                {activeTab === 'activity' && (
-                    <TouchableOpacity>
-                        <Text style={{ color: colors.primary, fontWeight: '600' }}>Mark all read</Text>
+                <Text style={[styles.title, { color: colors.text }]}>Inbox</Text>
+                <View style={styles.headerActions}>
+                    <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.surfaceAlt }]}>
+                        <Search size={22} color={colors.text} />
                     </TouchableOpacity>
-                )}
+                    <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.surfaceAlt }]}>
+                        <Filter size={22} color={colors.text} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <View style={styles.tabContainer}>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'activity' && { borderBottomColor: colors.primary }]}
                     onPress={() => setActiveTab('activity')}
+                    style={[styles.tab, activeTab === 'activity' && { borderBottomColor: colors.primary, borderBottomWidth: 3 }]}
                 >
-                    <Text style={[styles.tabText, { color: activeTab === 'activity' ? colors.primary : colors.textSecondary }]}>Activity</Text>
+                    <Text style={[styles.tabText, { color: activeTab === 'activity' ? colors.text : colors.textSecondary }]}>Activity</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'messages' && { borderBottomColor: colors.primary }]}
                     onPress={() => setActiveTab('messages')}
+                    style={[styles.tab, activeTab === 'messages' && { borderBottomColor: colors.primary, borderBottomWidth: 3 }]}
                 >
-                    <Text style={[styles.tabText, { color: activeTab === 'messages' ? colors.primary : colors.textSecondary }]}>Messages</Text>
+                    <Text style={[styles.tabText, { color: activeTab === 'messages' ? colors.text : colors.textSecondary }]}>Messages</Text>
+                    <View style={[styles.dot, { backgroundColor: colors.primary }]} />
                 </TouchableOpacity>
             </View>
 
-            <FlatList
-                data={activeTab === 'activity' ? MOCK_NOTIFICATIONS : MOCK_MESSAGES}
-                keyExtractor={(item) => item.id}
-                renderItem={activeTab === 'activity' ? renderActivityItem : renderMessageItem}
-                contentContainerStyle={styles.list}
-                ListEmptyComponent={
-                    <View style={styles.emptyState}>
-                        <Text style={{ color: colors.textSecondary }}>No items yet</Text>
-                    </View>
-                }
-            />
+            {activeTab === 'activity' ? (
+                <FlatList
+                    data={MOCK_NOTIFICATIONS}
+                    renderItem={renderNotification}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={styles.list}
+                    showsVerticalScrollIndicator={false}
+                />
+            ) : (
+                <FlatList
+                    data={MOCK_USERS.slice(1)}
+                    renderItem={renderMessageItem}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={styles.list}
+                    showsVerticalScrollIndicator={false}
+                />
+            )}
         </SafeAreaView>
     );
 }
@@ -134,40 +129,78 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 24,
     },
+    title: {
+        fontSize: 32,
+        fontWeight: '800',
+    },
+    headerActions: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    iconButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    tabContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: 24,
+        marginBottom: 16,
+        gap: 24,
+    },
+    tab: {
+        paddingVertical: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    tabText: {
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    dot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        marginLeft: 6,
+    },
     list: {
         paddingHorizontal: 24,
     },
     notificationItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
         paddingVertical: 16,
         borderBottomWidth: 1,
     },
+    notificationContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
     avatarContainer: {
         position: 'relative',
-        marginRight: 16,
     },
     avatar: {
-        width: 56,
-        height: 56,
-        borderRadius: 20,
+        width: 54,
+        height: 54,
+        borderRadius: 18,
     },
     typeIcon: {
         position: 'absolute',
         bottom: -4,
         right: -4,
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
+        width: 20,
+        height: 20,
+        borderRadius: 10,
         borderWidth: 2,
         borderColor: 'white',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    content: {
+    textContainer: {
         flex: 1,
+        marginLeft: 16,
     },
-    text: {
+    notificationText: {
         fontSize: 14,
         lineHeight: 20,
     },
@@ -175,40 +208,52 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginTop: 4,
     },
-    postPreview: {
-        width: 48,
-        height: 48,
-        borderRadius: 8,
+    postThumb: {
+        width: 50,
+        height: 50,
+        borderRadius: 12,
         marginLeft: 12,
     },
-    emptyState: {
-        alignItems: 'center',
-        marginTop: 100,
-    },
-    tabContainer: {
+    messageItem: {
         flexDirection: 'row',
-        paddingHorizontal: 24,
+        alignItems: 'center',
+        paddingVertical: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#eee', // Will be overridden by theme usually or just use transparent
-        marginBottom: 8,
     },
-    tab: {
-        marginRight: 24,
-        paddingVertical: 12,
-        borderBottomWidth: 2,
-        borderBottomColor: 'transparent',
+    messageHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
-    tabText: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    messageSender: {
+    userName: {
         fontSize: 16,
         fontWeight: '700',
-        marginBottom: 4,
     },
-    messagePreview: {
+    lastMessage: {
         fontSize: 14,
-        marginTop: 2,
+        marginTop: 4,
+    },
+    onlineBadge: {
+        position: 'absolute',
+        bottom: 2,
+        right: 2,
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        borderWidth: 2,
+        borderColor: 'white',
+    },
+    unreadBadge: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 12,
+    },
+    unreadText: {
+        color: 'white',
+        fontSize: 10,
+        fontWeight: '800',
     },
 });

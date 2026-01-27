@@ -1,89 +1,67 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { useTheme } from '../../contexts/ThemeContext';
-import { Home, Compass, PlusSquare, User, Bell } from 'lucide-react-native';
-import { Platform, View, StyleSheet } from 'react-native';
+import { useTheme } from '../../src/hooks/useTheme';
+import { Home, Compass, MessageSquare, Bell, User } from 'lucide-react-native';
+import { Platform } from 'react-native';
 
-export default function TabLayout() {
+export default function TabsLayout() {
     const { colors } = useTheme();
 
     return (
         <Tabs
             screenOptions={{
                 headerShown: false,
-                tabBarActiveTintColor: colors.primary,
-                tabBarInactiveTintColor: colors.textSecondary,
                 tabBarStyle: {
                     backgroundColor: colors.background,
                     borderTopColor: colors.border,
                     height: Platform.OS === 'ios' ? 88 : 64,
-                    paddingBottom: Platform.OS === 'ios' ? 28 : 12,
-                    paddingTop: 12,
-                    ...styles.shadow,
+                    paddingBottom: Platform.OS === 'ios' ? 30 : 10,
+                    paddingTop: 10,
                 },
+                tabBarActiveTintColor: colors.primary,
+                tabBarInactiveTintColor: colors.textSecondary,
                 tabBarLabelStyle: {
-                    fontSize: 12,
-                    fontWeight: '500',
+                    fontSize: 10,
+                    fontWeight: '700',
                 },
             }}
         >
             <Tabs.Screen
-                name="index"
+                name="home"
                 options={{
                     title: 'Home',
-                    tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+                    tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
                 }}
             />
             <Tabs.Screen
                 name="explore"
                 options={{
                     title: 'Explore',
-                    tabBarIcon: ({ color, size }) => <Compass color={color} size={size} />,
+                    tabBarIcon: ({ color, size }) => <Compass size={size} color={color} />,
                 }}
             />
             <Tabs.Screen
-                name="create"
+                name="chat"
                 options={{
-                    title: '',
-                    tabBarIcon: ({ color, size }) => (
-                        <View style={[styles.createButton, { backgroundColor: colors.primary }]}>
-                            <PlusSquare color="white" size={28} />
-                        </View>
-                    ),
+                    title: 'Chat',
+                    tabBarIcon: ({ color, size }) => <MessageSquare size={size} color={color} />,
+                    tabBarBadge: 3,
                 }}
             />
             <Tabs.Screen
-                name="activity"
+                name="notifications"
                 options={{
-                    title: 'Activity',
-                    tabBarIcon: ({ color, size }) => <Bell color={color} size={size} />,
+                    title: 'Inbox',
+                    tabBarIcon: ({ color, size }) => <Bell size={size} color={color} />,
                 }}
             />
             <Tabs.Screen
                 name="profile"
                 options={{
                     title: 'Profile',
-                    tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
+                    tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
                 }}
             />
         </Tabs>
     );
 }
-
-const styles = StyleSheet.create({
-    createButton: {
-        width: 48,
-        height: 48,
-        borderRadius: 14,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: -4,
-    },
-    shadow: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 20,
-    },
-});

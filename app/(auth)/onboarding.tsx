@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Dimensions, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useTheme } from '../../contexts/ThemeContext';
-import { Button } from '../../components/Button';
+import { useTheme } from '../../src/hooks/useTheme';
+import { Button } from '../../src/components/atoms/Button';
 import { MotiView, AnimatePresence } from 'moti';
 import { ChevronRight } from 'lucide-react-native';
 
@@ -27,17 +27,11 @@ const SLIDES = [
         description: 'Build relationships with other creatives and find your next collaboration.',
         icon: '🤝',
     },
-    {
-        id: 4,
-        title: 'Get inspired daily',
-        description: 'Daily dose of creativity to keep you motivated and fresh.',
-        icon: '💡',
-    },
 ];
 
 export default function OnboardingScreen() {
     const router = useRouter();
-    const { colors } = useTheme();
+    const { colors, typography, spacing } = useTheme();
     const [currentSlide, setCurrentSlide] = useState(0);
 
     const handleNext = () => {

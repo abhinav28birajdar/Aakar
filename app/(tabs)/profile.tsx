@@ -1,34 +1,19 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../src/hooks/useTheme';
 import { Image } from 'expo-image';
-import { Settings, Share2, Grid, Bookmark, Heart, Edit2, Link as LinkIcon, MapPin } from 'lucide-react-native';
-import { MOCK_POSTS } from '../../constants/mockData';
-import { Button } from '../../components/Button';
+import { Settings, Share2, Grid, Bookmark, Heart, Edit2, Link as LinkIcon, MapPin, MoreVertical } from 'lucide-react-native';
+import { MOCK_POSTS, MOCK_USERS } from '../../src/constants/mockData';
+import { Button } from '../../src/components/atoms/Button';
 import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
 export default function ProfileScreen() {
-    const { colors } = useTheme();
-    const { user } = useAuth();
+    const { colors, typography, spacing } = useTheme();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState('posts');
-    // user might be null initially if loading, handled by _layout mostly, but safe check needed
-    // or just mock if strictly ui focus and auth is bypassed? 
-    // AuthContext ensures user is present in (tabs) via _layout check. 
-
-    // Fallback if useAuth user is null.
-    const displayUser = {
-        full_name: user?.name || 'Guest User',
-        username: user?.username || 'guest',
-        avatar_url: user?.avatar_url || 'https://i.pravatar.cc/150',
-        posts_count: 24,
-        bio: 'Product Designer',
-        following: 450,
-        followers: 1200
-    };
+    const user = MOCK_USERS[0];
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -48,9 +33,9 @@ export default function ProfileScreen() {
 
                 {/* Profile Info */}
                 <View style={styles.profileInfo}>
-                    <Image source={{ uri: displayUser.avatar_url }} style={styles.avatar} />
-                    <Text style={[styles.name, { color: colors.text }]}>{displayUser.full_name}</Text>
-                    <Text style={[styles.username, { color: colors.textSecondary }]}>@{displayUser.username}</Text>
+                    <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
+                    <Text style={[styles.name, { color: colors.text }]}>{user.full_name}</Text>
+                    <Text style={[styles.username, { color: colors.textSecondary }]}>@{user.username}</Text>
 
                     <View style={styles.metaRow}>
                         <View style={styles.metaItem}>
@@ -64,21 +49,21 @@ export default function ProfileScreen() {
                     </View>
 
                     <Text style={[styles.bio, { color: colors.text, textAlign: 'center' }]}>
-                        {displayUser.bio}. Creating digital experiences that matter.
+                        {user.bio}. Creating digital experiences that matter.
                     </Text>
 
                     {/* Stats */}
                     <View style={styles.statsRow}>
                         <View style={styles.statItem}>
-                            <Text style={[styles.statValue, { color: colors.text }]}>{displayUser.posts_count}</Text>
+                            <Text style={[styles.statValue, { color: colors.text }]}>{user.posts_count}</Text>
                             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Posts</Text>
                         </View>
                         <TouchableOpacity onPress={() => router.push('/followers')} style={styles.statItem}>
-                            <Text style={[styles.statValue, { color: colors.text }]}>{displayUser.followers}</Text>
+                            <Text style={[styles.statValue, { color: colors.text }]}>1.2k</Text>
                             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Followers</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => router.push('/following')} style={styles.statItem}>
-                            <Text style={[styles.statValue, { color: colors.text }]}>{displayUser.following}</Text>
+                            <Text style={[styles.statValue, { color: colors.text }]}>450</Text>
                             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Following</Text>
                         </TouchableOpacity>
                     </View>

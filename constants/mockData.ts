@@ -8,9 +8,6 @@ export const MOCK_USERS = [
         followers: 1200,
         following: 450,
         posts_count: 24,
-        is_verified: true,
-        location: 'San Francisco, CA',
-        cover_image_url: 'https://picsum.photos/800/200?random=1',
     },
     {
         id: '2',
@@ -21,22 +18,6 @@ export const MOCK_USERS = [
         followers: 3500,
         following: 800,
         posts_count: 56,
-        is_verified: false,
-        location: 'New York, NY',
-        cover_image_url: 'https://picsum.photos/800/200?random=2',
-    },
-    {
-        id: '3',
-        username: 'pixel_art',
-        full_name: 'Mike Ross',
-        avatar_url: 'https://i.pravatar.cc/150?u=3',
-        bio: 'Freelance Illustrator',
-        followers: 900,
-        following: 200,
-        posts_count: 15,
-        is_verified: false,
-        location: 'London, UK',
-        cover_image_url: 'https://picsum.photos/800/200?random=3',
     },
 ];
 
@@ -52,8 +33,7 @@ export const MOCK_POSTS = [
         views: 1200,
         comments_count: 12,
         category: 'UI/UX',
-        created_at: '2m ago',
-        tags: ['minimal', 'dashboard', 'ui'],
+        created_at: '2024-03-20T10:00:00Z',
     },
     {
         id: '2',
@@ -66,8 +46,7 @@ export const MOCK_POSTS = [
         views: 3500,
         comments_count: 45,
         category: 'Branding',
-        created_at: '1h ago',
-        tags: ['green', 'logo', 'branding'],
+        created_at: '2024-03-19T15:30:00Z',
     },
     {
         id: '3',
@@ -79,9 +58,8 @@ export const MOCK_POSTS = [
         likes: 320,
         views: 2800,
         comments_count: 28,
-        category: 'Mobile Design',
-        created_at: '3h ago',
-        tags: ['fintech', 'darkmode', 'app'],
+        category: 'Mobile',
+        created_at: '2024-03-18T09:15:00Z',
     },
     {
         id: '4',
@@ -93,54 +71,13 @@ export const MOCK_POSTS = [
         likes: 890,
         views: 12000,
         comments_count: 156,
-        category: '3D',
-        created_at: '1d ago',
-        tags: ['3d', 'blender', 'abstract'],
-    },
-    {
-        id: '5',
-        user_id: '3',
-        creator: MOCK_USERS[2],
-        title: 'Neon City',
-        description: 'Cyberpunk inspired digital art.',
-        image_url: 'https://picsum.photos/800/800?random=5',
-        likes: 567,
-        views: 5000,
-        comments_count: 89,
-        category: 'Illustration',
-        created_at: '2d ago',
-        tags: ['cyberpunk', 'neon', 'art'],
-    },
-    {
-        id: '6',
-        user_id: '2',
-        creator: MOCK_USERS[1],
-        title: 'Typography Experiment',
-        description: 'Playing with bold serif fonts.',
-        image_url: 'https://picsum.photos/900/1200?random=6',
-        likes: 230,
-        views: 2100,
-        comments_count: 20,
-        category: 'Typography',
-        created_at: '3d ago',
-        tags: ['type', 'font', 'serif'],
+        category: '3D Art',
+        created_at: '2024-03-17T20:00:00Z',
     },
 ];
 
 export const CATEGORIES = [
-    'All',
-    'Logo',
-    'UI/UX',
-    'Branding',
-    'Illustration',
-    'Web Design',
-    'Mobile Design',
-    'Typography',
-    'Photography',
-    '3D',
-    'Animation',
-    'Print',
-    'Packaging'
+    'All', 'UI/UX', 'Branding', 'Illustration', 'Web Design', 'Mobile', 'Typography', '3D Art', 'Animation',
 ];
 
 export const MOCK_NOTIFICATIONS = [
@@ -149,70 +86,20 @@ export const MOCK_NOTIFICATIONS = [
         type: 'like',
         user: MOCK_USERS[1],
         post: MOCK_POSTS[0],
-        content: 'liked your post.',
         timestamp: '2m ago',
-        read: false,
     },
     {
         id: '2',
         type: 'comment',
-        user: MOCK_USERS[2],
+        user: MOCK_USERS[1],
         post: MOCK_POSTS[0],
         content: 'Love the color palette!',
         timestamp: '15m ago',
-        read: false,
     },
     {
         id: '3',
         type: 'follow',
         user: MOCK_USERS[1],
-        content: 'started following you.',
         timestamp: '1h ago',
-        read: true,
-    },
-    {
-        id: '4',
-        type: 'mention',
-        user: MOCK_USERS[0],
-        post: MOCK_POSTS[1],
-        content: 'mentioned you in a comment.',
-        timestamp: '1d ago',
-        read: true,
-    },
-];
-
-export const MOCK_MESSAGES = [
-    {
-        id: '1',
-        sender: MOCK_USERS[1],
-        lastMessage: 'Hey! Are you open for a collab?',
-        timestamp: '10:30 AM',
-        unreadCount: 2,
-    },
-    {
-        id: '2',
-        sender: MOCK_USERS[2],
-        lastMessage: 'Thanks for the resources!',
-        timestamp: 'Yesterday',
-        unreadCount: 0,
-    },
-];
-
-export const MOCK_REVIEWS = [
-    // ... reviews if needed
-];
-
-export const MOCK_COLLECTIONS = [
-    {
-        id: '1',
-        name: 'Inspiration',
-        count: 12,
-        cover: MOCK_POSTS[0].image_url,
-    },
-    {
-        id: '2',
-        name: 'UI Trends 2024',
-        count: 5,
-        cover: MOCK_POSTS[2].image_url,
     },
 ];

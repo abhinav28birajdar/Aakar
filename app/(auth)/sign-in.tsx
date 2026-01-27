@@ -1,37 +1,26 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { Button } from '../../components/Button';
-import { Input } from '../../components/Input';
+import { useTheme } from '../../src/hooks/useTheme';
+import { Button } from '../../src/components/atoms/Button';
+import { Input } from '../../src/components/atoms/Input';
 import { Mail, Lock, Github, Chrome, Apple } from 'lucide-react-native';
 import { MotiView } from 'moti';
 
 export default function SignInScreen() {
     const router = useRouter();
-    const { colors } = useTheme();
-    const { signIn } = useAuth();
+    const { colors, typography, spacing } = useTheme();
     const [email, setEmail] = useState('abhinavbirajdar28@gmail.com');
-    const [password, setPassword] = useState('');
+    const [password, setPassword] = useState('12345678');
     const [loading, setLoading] = useState(false);
 
-    const handleSignIn = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please fill in all fields');
-            return;
-        }
-
+    const handleSignIn = () => {
         setLoading(true);
-        try {
-            await signIn(email, password);
-            // Navigation handled in Context, but we can do it here too if needed.
-            // Context does router.replace('/(tabs)')
-        } catch (error: any) {
-            Alert.alert('Login Failed', error.message || 'Invalid credentials');
-        } finally {
+        // Simulate sign in
+        setTimeout(() => {
             setLoading(false);
-        }
+            router.replace('/(tabs)');
+        }, 1500);
     };
 
     return (

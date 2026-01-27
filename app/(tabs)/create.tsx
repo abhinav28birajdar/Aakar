@@ -1,128 +1,165 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, TextInput, Switch } from 'react-native';
-import { useTheme } from '../../contexts/ThemeContext';
-import { Image, Upload, X, ChevronRight, Palette, Tag, Layers, MessageSquare, AlertTriangle } from 'lucide-react-native';
-import { Button } from '../../components/Button';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Platform, Alert } from 'react-native';
+import { useTheme } from '../../src/hooks/useTheme';
+import { Image as ImageIcon, Plus, X, Camera, Palette, Tag, AlignLeft, ChevronRight, Share2 } from 'lucide-react-native';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
+import { Button } from '../../src/components/atoms/Button';
 import { useRouter } from 'expo-router';
+import { MotiView } from 'moti';
 
 export default function CreatePostScreen() {
-    const { colors } = useTheme();
+    const { colors, typography, spacing } = useTheme();
     const router = useRouter();
+    const [images, setImages] = useState<string[]>([]);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [allowComments, setAllowComments] = useState(true);
-    const [isMature, setIsMature] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    const pickImage = async () => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+
+        if (!result.canceled) {
+            setImages([...images, result.assets[0].uri]);
+        }
+    };
+
+    const removeImage = (index: number) => {
+        const newImages = [...images];
+        newImages.splice(index, 1);
+        setImages(newImages);
+    };
+
+    const handlePublish = () => {
+        if (!title || images.length === 0) {
+            Alert.alert('Missing Info', 'Please add a title and at least one image.');
+            return;
+        }
+        setLoading(true);
+        setTimeout(() => {
+            setLoading(false);
+            Alert.alert('Success', 'Post published successfully!', [
+                { text: 'OK', onPress: () => router.replace('/(tabs)') }
+            ]);
+        }, 2000);
+    };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()}>
-                    <Text style={[styles.cancel, { color: colors.textSecondary }]}>Cancel</Text>
+                    <X size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={[styles.title, { color: colors.text }]}>New Post</Text>
-                <TouchableOpacity>
-                    <Text style={[styles.draft, { color: colors.primary }]}>Drafts</Text>
+                <Text style={[styles.title, { color: colors.text }]}>New Design</Text>
+                <TouchableOpacity onPress={handlePublish}>
+                    <Text style={[styles.publishText, { color: colors.primary }]}>Publish</Text>
                 </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-                {/* Upload Zone */}
-                <TouchableOpacity style={[styles.uploadZone, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
-                    <Upload size={40} color={colors.primary} />
-                    <Text style={[styles.uploadText, { color: colors.text }]}>Upload your designs</Text>
-                    <Text style={[styles.uploadSubtext, { color: colors.textSecondary }]}>Drag & drop or browse files</Text>
-                    <Text style={[styles.uploadLimit, { color: colors.textMuted }]}>Max size: 50MB (JPG, PNG, MP4)</Text>
-                </TouchableOpacity>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                <View style={styles.imageSection}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.imageScroll}>
+                        {images.map((uri, index) => (
+                            <View key={index} style={styles.imagePreviewContainer}>
+                                <Image source={{ uri }} style={styles.imagePreview} />
+                                <TouchableOpacity
+                                    style={[styles.removeImage, { backgroundColor: colors.error }]}
+                                    onPress={() => removeImage(index)}
+                                >
+                                    <X size={14} color="white" />
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+                        <TouchableOpacity
+                            style={[styles.addImageButton, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+                            onPress={pickImage}
+                        >
+                            <Plus size={32} color={colors.textSecondary} />
+                            <Text style={[styles.addImageText, { color: colors.textSecondary }]}>Add Image</Text>
+                        </TouchableOpacity>
+                    </ScrollView>
+                </View>
 
-                <View style={styles.form}>
-                    <View style={styles.inputGroup}>
-                        <Text style={[styles.label, { color: colors.textSecondary }]}>Title</Text>
-                        <TextInput
-                            style={[styles.input, { color: colors.text, borderBottomColor: colors.border }]}
-                            placeholder="Give your work a name..."
-                            placeholderTextColor={colors.textMuted}
-                            value={title}
-                            onChangeText={setTitle}
-                        />
-                    </View>
+                <View style={[styles.form, { padding: 24 }]}>
+                    <TextInput
+                        placeholder="Title of your work"
+                        placeholderTextColor={colors.textSecondary}
+                        style={[styles.titleInput, { color: colors.text }]}
+                        value={title}
+                        onChangeText={setTitle}
+                    />
 
-                    <View style={styles.inputGroup}>
-                        <Text style={[styles.label, { color: colors.textSecondary }]}>Description</Text>
+                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+                    <View style={styles.descriptionRow}>
+                        <AlignLeft size={20} color={colors.textSecondary} />
                         <TextInput
-                            style={[styles.textArea, { color: colors.text, backgroundColor: colors.surfaceAlt, borderRadius: 12 }]}
-                            placeholder="Tell us about your design process..."
-                            placeholderTextColor={colors.textMuted}
+                            placeholder="Tell us about your process..."
+                            placeholderTextColor={colors.textSecondary}
+                            style={[styles.descriptionInput, { color: colors.text }]}
                             multiline
-                            numberOfLines={4}
                             value={description}
                             onChangeText={setDescription}
                         />
                     </View>
 
-                    {/* Selector Items */}
-                    <TouchableOpacity style={[styles.selectorItem, { borderBottomColor: colors.border }]}>
-                        <View style={styles.selectorLeft}>
-                            <Layers size={20} color={colors.textSecondary} />
-                            <Text style={[styles.selectorText, { color: colors.text }]}>Select Category</Text>
-                        </View>
-                        <View style={styles.selectorRight}>
-                            <Text style={[styles.selectorValue, { color: colors.textSecondary }]}>None</Text>
-                            <ChevronRight size={20} color={colors.textSecondary} />
-                        </View>
-                    </TouchableOpacity>
+                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-                    <TouchableOpacity style={[styles.selectorItem, { borderBottomColor: colors.border }]}>
-                        <View style={styles.selectorLeft}>
+                    <TouchableOpacity style={styles.inputRow}>
+                        <View style={styles.rowLabel}>
                             <Tag size={20} color={colors.textSecondary} />
-                            <Text style={[styles.selectorText, { color: colors.text }]}>Add Tags</Text>
+                            <Text style={[styles.labelText, { color: colors.text }]}>Tags</Text>
                         </View>
-                        <View style={styles.selectorRight}>
-                            <ChevronRight size={20} color={colors.textSecondary} />
+                        <View style={styles.rowAction}>
+                            <Text style={[styles.actionText, { color: colors.textSecondary }]}>Add tags</Text>
+                            <ChevronRight size={18} color={colors.textSecondary} />
                         </View>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={[styles.selectorItem, { borderBottomColor: colors.border }]}>
-                        <View style={styles.selectorLeft}>
+                    <TouchableOpacity style={styles.inputRow}>
+                        <View style={styles.rowLabel}>
                             <Palette size={20} color={colors.textSecondary} />
-                            <Text style={[styles.selectorText, { color: colors.text }]}>Color Palette</Text>
+                            <Text style={[styles.labelText, { color: colors.text }]}>Color Palette</Text>
                         </View>
-                        <View style={styles.selectorRight}>
-                            <ChevronRight size={20} color={colors.textSecondary} />
+                        <View style={styles.rowAction}>
+                            <Text style={[styles.actionText, { color: colors.textSecondary }]}>Extract</Text>
+                            <ChevronRight size={18} color={colors.textSecondary} />
                         </View>
                     </TouchableOpacity>
 
-                    {/* Toggles */}
-                    <View style={[styles.selectorItem, { borderBottomColor: colors.border }]}>
-                        <View style={styles.selectorLeft}>
-                            <MessageSquare size={20} color={colors.textSecondary} />
-                            <Text style={[styles.selectorText, { color: colors.text }]}>Allow Comments</Text>
+                    <TouchableOpacity style={styles.inputRow}>
+                        <View style={styles.rowLabel}>
+                            <ImageIcon size={20} color={colors.textSecondary} />
+                            <Text style={[styles.labelText, { color: colors.text }]}>Category</Text>
                         </View>
-                        <Switch
-                            value={allowComments}
-                            onValueChange={setAllowComments}
-                            trackColor={{ false: colors.border, true: colors.primary }}
-                        />
-                    </View>
-
-                    <View style={[styles.selectorItem, { borderBottomColor: colors.border }]}>
-                        <View style={styles.selectorLeft}>
-                            <AlertTriangle size={20} color={colors.textSecondary} />
-                            <Text style={[styles.selectorText, { color: colors.text }]}>Mature Content</Text>
+                        <View style={styles.rowAction}>
+                            <Text style={[styles.actionText, { color: colors.textSecondary }]}>UI/UX Design</Text>
+                            <ChevronRight size={18} color={colors.textSecondary} />
                         </View>
-                        <Switch
-                            value={isMature}
-                            onValueChange={setIsMature}
-                            trackColor={{ false: colors.border, true: colors.primary }}
-                        />
-                    </View>
+                    </TouchableOpacity>
                 </View>
 
-                <Button
-                    title="Publish Design"
-                    onPress={() => { }}
-                    style={styles.publishButton}
-                    size="lg"
-                />
+                <View style={styles.buttonContainer}>
+                    <Button
+                        title="Publish Post"
+                        onPress={handlePublish}
+                        loading={loading}
+                        style={styles.mainButton}
+                    />
+                    <Button
+                        title="Save as Draft"
+                        variant="outline"
+                        onPress={() => { }}
+                        style={styles.draftButton}
+                    />
+                </View>
+
+                <View style={{ height: 40 }} />
             </ScrollView>
         </SafeAreaView>
     );
@@ -136,94 +173,116 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 24,
-        paddingVertical: 16,
-    },
-    cancel: {
-        fontSize: 16,
-        fontWeight: '500',
+        padding: 24,
     },
     title: {
         fontSize: 18,
         fontWeight: '700',
     },
-    draft: {
+    publishText: {
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: '700',
     },
-    content: {
-        padding: 24,
+    scrollContent: {
+        flexGrow: 1,
     },
-    uploadZone: {
-        height: 240,
-        borderRadius: 24,
+    imageSection: {
+        paddingVertical: 12,
+    },
+    imageScroll: {
+        paddingHorizontal: 24,
+        gap: 16,
+    },
+    imagePreviewContainer: {
+        width: 140,
+        height: 140,
+        borderRadius: 20,
+        overflow: 'hidden',
+        position: 'relative',
+    },
+    imagePreview: {
+        width: '100%',
+        height: '100%',
+    },
+    removeImage: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    addImageButton: {
+        width: 140,
+        height: 140,
+        borderRadius: 20,
         borderWidth: 2,
         borderStyle: 'dashed',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 32,
     },
-    uploadText: {
-        fontSize: 18,
-        fontWeight: '700',
-        marginTop: 16,
-    },
-    uploadSubtext: {
-        fontSize: 14,
-        marginTop: 4,
-    },
-    uploadLimit: {
+    addImageText: {
         fontSize: 12,
-        marginTop: 12,
+        fontWeight: '600',
+        marginTop: 8,
     },
     form: {
-        gap: 24,
-        marginBottom: 40,
+        gap: 20,
     },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
-        marginBottom: 8,
-    },
-    inputGroup: {},
-    input: {
-        fontSize: 20,
+    titleInput: {
+        fontSize: 24,
         fontWeight: '700',
-        paddingVertical: 12,
-        borderBottomWidth: 1,
+        paddingVertical: 8,
     },
-    textArea: {
+    divider: {
+        height: 1,
+        width: '100%',
+    },
+    descriptionRow: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    descriptionInput: {
+        flex: 1,
         fontSize: 16,
-        padding: 16,
-        height: 120,
+        lineHeight: 24,
         textAlignVertical: 'top',
+        minHeight: 100,
     },
-    selectorItem: {
+    inputRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 16,
-        borderBottomWidth: 1,
+        paddingVertical: 12,
     },
-    selectorLeft: {
+    rowLabel: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
     },
-    selectorRight: {
+    labelText: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    rowAction: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
     },
-    selectorText: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    selectorValue: {
+    actionText: {
         fontSize: 14,
+        fontWeight: '500',
     },
-    publishButton: {
+    buttonContainer: {
+        padding: 24,
+        gap: 12,
+    },
+    mainButton: {
         width: '100%',
-        marginBottom: 40,
+    },
+    draftButton: {
+        width: '100%',
     },
 });

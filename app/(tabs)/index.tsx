@@ -10,14 +10,14 @@ import {
     RefreshControl,
     StatusBar
 } from 'react-native';
-import { useTheme } from '../../contexts/ThemeContext';
-import { MOCK_POSTS, CATEGORIES } from '../../constants/mockData';
-import { DesignCard } from '../../components/DesignCard';
+import { useTheme } from '../../src/hooks/useTheme';
+import { MOCK_POSTS, CATEGORIES } from '../../src/constants/mockData';
+import { DesignCard } from '../../src/components/molecules/DesignCard';
 import { Search, Bell, Sun, Moon } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
-    const { colors, theme, toggleTheme } = useTheme();
+    const { colors, typography, spacing, isDark } = useTheme();
     const router = useRouter();
     const [activeCategory, setActiveCategory] = useState('All');
     const [refreshing, setRefreshing] = useState(false);
@@ -34,17 +34,7 @@ export default function HomeScreen() {
                 <Text style={[styles.brand, { color: colors.text }]}>Aakar Feed</Text>
             </View>
             <View style={styles.headerIcons}>
-                <TouchableOpacity
-                    style={[styles.iconButton, { backgroundColor: colors.surfaceAlt }]}
-                    onPress={toggleTheme}
-                >
-                    {theme === 'dark' ? <Sun size={22} color={colors.text} /> : <Moon size={22} color={colors.text} />}
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.iconButton, { backgroundColor: colors.surfaceAlt }]}
-                    onPress={() => router.push('/search')}
-                >
+                <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.surfaceAlt }]}>
                     <Search size={22} color={colors.text} />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -91,20 +81,16 @@ export default function HomeScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} />
+            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
             <FlatList
                 data={activeCategory === 'All' ? MOCK_POSTS : MOCK_POSTS.filter(p => p.category === activeCategory)}
                 renderItem={({ item }) => (
-                    <View style={{ flex: 1, padding: 6 }}>
-                        {/* Wrapper for grid spacing */}
-                        <DesignCard
-                            post={item}
-                            onPress={() => router.push(`/post/${item.id}`)}
-                        />
-                    </View>
+                    <DesignCard
+                        post={item}
+                        onPress={() => router.push({ pathname: '/post/[id]', params: { id: item.id } })}
+                    />
                 )}
                 keyExtractor={(item) => item.id}
-                numColumns={2}
                 ListHeaderComponent={
                     <>
                         {renderHeader()}
@@ -116,7 +102,6 @@ export default function HomeScreen() {
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
                 }
-                columnWrapperStyle={{ justifyContent: 'space-between' }}
             />
         </SafeAreaView>
     );

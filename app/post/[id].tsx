@@ -12,9 +12,8 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { useTheme } from '../../contexts/ThemeContext';
-import { MOCK_POSTS } from '../../constants/mockData';
-import { TYPOGRAPHY, SIZES } from '../../constants/theme';
+import { useTheme } from '../../src/hooks/useTheme';
+import { MOCK_POSTS } from '../../src/constants/mockData';
 import {
     ArrowLeft,
     Heart,
@@ -24,7 +23,7 @@ import {
     MoreHorizontal,
     ExternalLink
 } from 'lucide-react-native';
-import { Button } from '../../components/Button';
+import { Button } from '../../src/components/atoms/Button';
 import { MotiView } from 'moti';
 
 const { width } = Dimensions.get('window');
@@ -32,7 +31,7 @@ const { width } = Dimensions.get('window');
 export default function PostDetailScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
-    const { colors } = useTheme();
+    const { colors, typography, spacing } = useTheme();
 
     const post = MOCK_POSTS.find(p => p.id === id) || MOCK_POSTS[0];
     const [isLiked, setIsLiked] = useState(false);
@@ -76,12 +75,12 @@ export default function PostDetailScreen() {
                 </View>
 
                 {/* Content */}
-                <View style={[styles.content, { padding: SIZES.md, backgroundColor: colors.background }]}>
+                <View style={[styles.content, { padding: spacing.lg }]}>
                     <View style={styles.titleRow}>
                         <View style={{ flex: 1 }}>
-                            <Text style={[TYPOGRAPHY.h2, { color: colors.text }]}>{post.title}</Text>
-                            <Text style={[TYPOGRAPHY.body, { color: colors.textSecondary, marginTop: SIZES.xs }]}>
-                                {post.category || 'Design'} • {post.views} views
+                            <Text style={[typography.h2, { color: colors.text }]}>{post.title}</Text>
+                            <Text style={[typography.body, { color: colors.textSecondary, marginTop: spacing.xs }]}>
+                                {post.category} • {post.views} views
                             </Text>
                         </View>
                         <TouchableOpacity
@@ -95,15 +94,15 @@ export default function PostDetailScreen() {
                     {/* Designer info */}
                     <TouchableOpacity
                         onPress={() => router.push(`/profile/${post.creator.username}`)}
-                        style={[styles.designerCard, { backgroundColor: colors.surfaceAlt, marginTop: SIZES.lg }]}
+                        style={[styles.designerCard, { backgroundColor: colors.surfaceAlt, marginTop: spacing.lg }]}
                     >
                         <Image
                             source={{ uri: post.creator.avatar_url }}
                             style={styles.designerAvatar}
                         />
-                        <View style={{ flex: 1, marginLeft: SIZES.md }}>
-                            <Text style={[TYPOGRAPHY.bodyMedium, { color: colors.text }]}>{post.creator.full_name}</Text>
-                            <Text style={[TYPOGRAPHY.small, { color: colors.textSecondary }]}>@{post.creator.username}</Text>
+                        <View style={{ flex: 1, marginLeft: spacing.md }}>
+                            <Text style={[typography.bodyMedium, { color: colors.text }]}>{post.creator.full_name}</Text>
+                            <Text style={[typography.small, { color: colors.textSecondary }]}>@{post.creator.username}</Text>
                         </View>
                         <Button
                             title="Follow"
@@ -114,22 +113,22 @@ export default function PostDetailScreen() {
                         />
                     </TouchableOpacity>
 
-                    <Text style={[TYPOGRAPHY.body, { color: colors.text, marginTop: SIZES.xl, lineHeight: 28 }]}>
+                    <Text style={[typography.body, { color: colors.text, marginTop: spacing.xl, lineHeight: 28 }]}>
                         {post.description}. This work focuses on creating a seamless user experience while maintaining aesthetic excellence.
                     </Text>
 
                     {/* Tags */}
-                    <View style={[styles.tagContainer, { marginTop: SIZES.xl }]}>
+                    <View style={[styles.tagContainer, { marginTop: spacing.xl }]}>
                         {['UI', 'Minimal', 'App', 'Clean'].map((tag) => (
                             <View key={tag} style={[styles.tag, { backgroundColor: colors.surfaceAlt }]}>
-                                <Text style={[TYPOGRAPHY.small, { color: colors.textSecondary }]}>#{tag}</Text>
+                                <Text style={[typography.small, { color: colors.textSecondary }]}>#{tag}</Text>
                             </View>
                         ))}
                     </View>
 
                     {/* Similar designs */}
-                    <View style={{ marginTop: SIZES.xxl }}>
-                        <Text style={[TYPOGRAPHY.h3, { color: colors.text, marginBottom: SIZES.lg }]}>More like this</Text>
+                    <View style={{ marginTop: spacing.xxl }}>
+                        <Text style={[typography.h3, { color: colors.text, marginBottom: spacing.lg }]}>More like this</Text>
                         <View style={styles.grid}>
                             {MOCK_POSTS.filter(p => p.id !== post.id).slice(0, 2).map((p) => (
                                 <TouchableOpacity key={p.id} style={styles.gridItem}>

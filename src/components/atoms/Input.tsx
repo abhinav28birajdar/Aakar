@@ -8,7 +8,7 @@ import {
     TouchableOpacity,
     Platform
 } from 'react-native';
-import { useTheme } from '../hooks/useTheme';
+import { useTheme } from '../../hooks/useTheme';
 import { Eye, EyeOff } from 'lucide-react-native';
 
 interface CustomInputProps extends TextInputProps {

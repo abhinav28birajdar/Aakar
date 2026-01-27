@@ -1,93 +1,168 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
-const { width } = Dimensions.get('window');
-import { useTheme } from '../contexts/ThemeContext';
-
-import { useAuth } from '../contexts/AuthContext';
-import { Image } from 'expo-image';
-import { ArrowLeft, Camera, User, AtSign, Globe, MapPin, Briefcase } from 'lucide-react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Alert, Platform, KeyboardAvoidingView } from 'react-native';
+import { useTheme } from '../src/hooks/useTheme';
+import { ArrowLeft, Camera, Check, Link as LinkIcon, MapPin, AtSign, User, FileText, Globe } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { Input } from '../components/Input';
-import { Button } from '../components/Button';
+import { Image } from 'expo-image';
+import { MOCK_USERS } from '../src/constants/mockData';
+import * as ImagePicker from 'expo-image-picker';
+import { Button } from '../src/components/atoms/Button';
 
 export default function EditProfileScreen() {
-    const { colors } = useTheme();
+    const { colors, typography, spacing } = useTheme();
     const router = useRouter();
-    const { user } = useAuth(); // Can be null, treat carefully
+    const user = MOCK_USERS[0];
 
-    // Default values if user is null or missing fields
-    const [fullName, setFullName] = useState(user?.name || '');
-    const [username, setUsername] = useState(user?.username || '');
-    const [bio, setBio] = useState('Product Designer'); // Mock default since User type lacks bio
+    const [fullName, setFullName] = useState(user.full_name);
+    const [username, setUsername] = useState(user.username);
+    const [bio, setBio] = useState(user.bio);
+    const [location, setLocation] = useState(user.location || '');
     const [website, setWebsite] = useState('ninja.design');
-    const [location, setLocation] = useState('San Francisco, CA');
+    const [avatar, setAvatar] = useState(user.avatar_url);
+    const [cover, setCover] = useState(user.cover_image_url);
+
+    const pickAvatar = async () => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 1,
+        });
+
+        if (!result.canceled) {
+            setAvatar(result.assets[0].uri);
+        }
+    };
+
+    const pickCover = async () => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [4, 1],
+            quality: 1,
+        });
+
+        if (!result.canceled) {
+            setCover(result.assets[0].uri);
+        }
+    };
+
+    const handleSave = () => {
+        Alert.alert('Profile Updated', 'Your changes have been saved successfully.');
+        router.back();
+    };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
                     <ArrowLeft size={24} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={[styles.title, { color: colors.text }]}>Edit Profile</Text>
-                <TouchableOpacity onPress={() => router.back()}>
-                    <Text style={[styles.save, { color: colors.primary }]}>Save</Text>
+                <TouchableOpacity onPress={handleSave} style={[styles.saveButton, { backgroundColor: colors.primary + '15' }]}>
+                    <Check size={20} color={colors.primary} />
                 </TouchableOpacity>
             </View>
 
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={{ flex: 1 }}
-            >
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-                    {/* Avatar Edit */}
-                    <View style={styles.avatarContainer}>
-                        <Image source={{ uri: user?.avatar_url || 'https://i.pravatar.cc/150' }} style={styles.avatar} />
-                        <TouchableOpacity style={[styles.cameraButton, { backgroundColor: colors.primary }]}>
-                            <Camera size={20} color="white" />
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <View style={styles.imagesContainer}>
+                        <TouchableOpacity onPress={pickCover} style={styles.coverContainer}>
+                            <Image source={{ uri: cover }} style={styles.coverImage} />
+                            <View style={[styles.cameraIconOverlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
+                                <Camera size={24} color="white" />
+                            </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity onPress={pickAvatar} style={styles.avatarContainer}>
+                            <Image source={{ uri: avatar }} style={[styles.avatarImage, { borderColor: colors.background }]} />
+                            <View style={[styles.avatarCameraIcon, { backgroundColor: colors.primary }]}>
+                                <Camera size={14} color="white" />
+                            </View>
                         </TouchableOpacity>
                     </View>
 
                     <View style={styles.form}>
-                        <Input
-                            label="Full Name"
-                            value={fullName}
-                            onChangeText={setFullName}
-                            leftIcon={<User size={20} color={colors.textSecondary} />}
-                        />
-                        <Input
-                            label="Username"
-                            value={username}
-                            onChangeText={setUsername}
-                            leftIcon={<AtSign size={20} color={colors.textSecondary} />}
-                            autoCapitalize="none"
-                        />
-                        <Input
-                            label="Bio"
-                            value={bio}
-                            onChangeText={setBio}
-                            multiline
-                            numberOfLines={3}
-                            style={{ height: 100 }}
-                        />
-                        <Input
-                            label="Website"
-                            value={website}
-                            onChangeText={setWebsite}
-                            leftIcon={<Globe size={20} color={colors.textSecondary} />}
-                            autoCapitalize="none"
-                        />
-                        <Input
-                            label="Location"
-                            value={location}
-                            onChangeText={setLocation}
-                            leftIcon={<MapPin size={20} color={colors.textSecondary} />}
-                        />
+                        <View style={styles.inputGroup}>
+                            <View style={styles.inputLabelRow}>
+                                <User size={18} color={colors.textSecondary} />
+                                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Full Name</Text>
+                            </View>
+                            <TextInput
+                                style={[styles.input, { color: colors.text, borderBottomColor: colors.border }]}
+                                value={fullName}
+                                onChangeText={setFullName}
+                                placeholder="Enter your full name"
+                                placeholderTextColor={colors.textMuted}
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <View style={styles.inputLabelRow}>
+                                <AtSign size={18} color={colors.textSecondary} />
+                                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Username</Text>
+                            </View>
+                            <TextInput
+                                style={[styles.input, { color: colors.text, borderBottomColor: colors.border }]}
+                                value={username}
+                                onChangeText={setUsername}
+                                autoCapitalize="none"
+                                placeholder="Choose a username"
+                                placeholderTextColor={colors.textMuted}
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <View style={styles.inputLabelRow}>
+                                <FileText size={18} color={colors.textSecondary} />
+                                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Bio</Text>
+                            </View>
+                            <TextInput
+                                style={[styles.input, styles.bioInput, { color: colors.text, borderBottomColor: colors.border }]}
+                                value={bio}
+                                onChangeText={setBio}
+                                multiline
+                                placeholder="Tell us about yourself"
+                                placeholderTextColor={colors.textMuted}
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <View style={styles.inputLabelRow}>
+                                <MapPin size={18} color={colors.textSecondary} />
+                                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Location</Text>
+                            </View>
+                            <TextInput
+                                style={[styles.input, { color: colors.text, borderBottomColor: colors.border }]}
+                                value={location}
+                                onChangeText={setLocation}
+                                placeholder="Where are you based?"
+                                placeholderTextColor={colors.textMuted}
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <View style={styles.inputLabelRow}>
+                                <LinkIcon size={18} color={colors.textSecondary} />
+                                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Website</Text>
+                            </View>
+                            <TextInput
+                                style={[styles.input, { color: colors.text, borderBottomColor: colors.border }]}
+                                value={website}
+                                onChangeText={setWebsite}
+                                autoCapitalize="none"
+                                placeholder="portfolio.design"
+                                placeholderTextColor={colors.textMuted}
+                            />
+                        </View>
                     </View>
 
-                    <View style={styles.section}>
-                        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Social Links</Text>
-                        <Button title="Add Behance" variant="outline" onPress={() => { }} style={styles.socialButton} />
-                        <Button title="Add Dribbble" variant="outline" onPress={() => { }} style={styles.socialButton} />
+                    <View style={styles.footer}>
+                        <Button
+                            title="Save Changes"
+                            onPress={handleSave}
+                            style={styles.mainButton}
+                        />
                     </View>
 
                     <View style={{ height: 40 }} />
@@ -107,58 +182,99 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 16,
     },
-    backButton: {
+    iconButton: {
         width: 44,
         height: 44,
         justifyContent: 'center',
+        alignItems: 'center',
     },
     title: {
         fontSize: 18,
         fontWeight: '700',
     },
-    save: {
-        fontSize: 16,
-        fontWeight: '700',
-        paddingRight: 8,
-    },
-    content: {
-        padding: 24,
-    },
-    avatarContainer: {
-        alignItems: 'center',
-        marginBottom: 32,
-        position: 'relative',
-    },
-    avatar: {
-        width: 120,
-        height: 120,
-        borderRadius: 40,
-    },
-    cameraButton: {
-        position: 'absolute',
-        bottom: -10,
-        right: (width - 48) / 2 - 60,
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+    saveButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    imagesContainer: {
+        height: 200,
+        marginBottom: 60,
+    },
+    coverContainer: {
+        height: 160,
+        width: '100%',
+        position: 'relative',
+    },
+    coverImage: {
+        width: '100%',
+        height: '100%',
+    },
+    cameraIconOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    avatarContainer: {
+        position: 'absolute',
+        bottom: -40,
+        left: 24,
+    },
+    avatarImage: {
+        width: 100,
+        height: 100,
+        borderRadius: 35,
         borderWidth: 4,
+    },
+    avatarCameraIcon: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 3,
         borderColor: 'white',
     },
     form: {
+        paddingHorizontal: 24,
+        gap: 24,
+    },
+    inputGroup: {
         gap: 8,
     },
-    section: {
-        marginTop: 32,
+    inputLabelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
-    sectionTitle: {
+    inputLabel: {
         fontSize: 14,
-        fontWeight: '700',
-        textTransform: 'uppercase',
-        marginBottom: 16,
+        fontWeight: '600',
     },
-    socialButton: {
-        marginBottom: 12,
+    input: {
+        fontSize: 16,
+        fontWeight: '500',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+    },
+    bioInput: {
+        minHeight: 80,
+        textAlignVertical: 'top',
+    },
+    footer: {
+        padding: 24,
+        marginTop: 24,
+    },
+    mainButton: {
+        width: '100%',
     },
 });

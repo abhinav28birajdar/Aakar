@@ -1,47 +1,71 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, ScrollView, FlatList } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, FlatList, ScrollView, Dimensions } from 'react-native';
+import { useTheme } from '../src/hooks/useTheme';
+import { Search as SearchIcon, X, ArrowLeft, Filter, TrendingUp, Clock, Grid, List } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { useTheme } from '../contexts/ThemeContext';
-import { ArrowLeft, Search as SearchIcon, X, Clock, TrendingUp } from 'lucide-react-native';
-import { MOCK_POSTS } from '../constants/mockData';
-import { DesignCard } from '../components/DesignCard';
-import { TYPOGRAPHY, SIZES } from '../constants/theme';
+import { Image } from 'expo-image';
+import { MOCK_POSTS } from '../src/constants/mockData';
+import { MotiView } from 'moti';
+
+const { width } = Dimensions.get('window');
+
+const RECENT_SEARCHES = ['Dashboard UI', 'Mobile App Design', 'Logo Branding', '3D Icons'];
+const TRENDING_TOPICS = ['Framer Motion', 'Glassmorphism', 'Bento Grid', 'Cyberpunk', 'Minimalist', 'Landing Page'];
 
 export default function SearchScreen() {
-    const { colors } = useTheme();
+    const { colors, typography, spacing } = useTheme();
     const router = useRouter();
     const [query, setQuery] = useState('');
-    const inputRef = useRef<TextInput>(null);
+    const [isSearching, setIsSearching] = useState(false);
 
-    useEffect(() => {
-        // Auto-focus after mounting
-        setTimeout(() => inputRef.current?.focus(), 100);
-    }, []);
+    const renderRecentSearch = (item: string) => (
+        <TouchableOpacity key={item} style={[styles.recentItem, { borderBottomColor: colors.border }]}>
+            <View style={styles.recentItemLeft}>
+                <Clock size={18} color={colors.textSecondary} />
+                <Text style={[styles.recentLabel, { color: colors.text }]}>{item}</Text>
+            </View>
+            <TouchableOpacity onPress={() => { }}>
+                <X size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+        </TouchableOpacity>
+    );
 
-    const recentSearches = ['Minimalist UI', 'Dashboard', 'Logo Design', 'Dark Mode'];
-    const trendingTags = ['#ui', '#ux', '#webdesign', '#app', '#branding', '#typography'];
+    const renderTopic = (topic: string) => (
+        <TouchableOpacity key={topic} style={[styles.topicChip, { backgroundColor: colors.surfaceAlt }]}>
+            <Text style={[styles.topicText, { color: colors.textSecondary }]}>{topic}</Text>
+        </TouchableOpacity>
+    );
 
-    const filteredPosts = query
-        ? MOCK_POSTS.filter(p => p.title.toLowerCase().includes(query.toLowerCase()) || p.category.toLowerCase().includes(query.toLowerCase()))
-        : [];
+    const renderResultItem = ({ item }: { item: any }) => (
+        <TouchableOpacity
+            style={styles.gridItem}
+            onPress={() => router.push({ pathname: '/post/[id]', params: { id: item.id } })}
+        >
+            <Image source={{ uri: item.image_url }} style={styles.resultImage} />
+            <View style={styles.resultOverlay}>
+                <Text numberOfLines={1} style={styles.resultTitle}>{item.title}</Text>
+            </View>
+        </TouchableOpacity>
+    );
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            {/* Header */}
-            <View style={[styles.header, { borderBottomColor: colors.border }]}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
                     <ArrowLeft size={24} color={colors.text} />
                 </TouchableOpacity>
-                <View style={[styles.searchContainer, { backgroundColor: colors.surfaceAlt }]}>
+                <View style={[styles.searchBar, { backgroundColor: colors.surfaceAlt }]}>
                     <SearchIcon size={20} color={colors.textSecondary} />
                     <TextInput
-                        ref={inputRef}
+                        placeholder="Search Aakar"
+                        placeholderTextColor={colors.textSecondary}
                         style={[styles.input, { color: colors.text }]}
-                        placeholder="Search designs, creators..."
-                        placeholderTextColor={colors.textMuted}
                         value={query}
-                        onChangeText={setQuery}
-                        returnKeyType="search"
+                        onChangeText={(text) => {
+                            setQuery(text);
+                            setIsSearching(text.length > 0);
+                        }}
+                        autoFocus
                     />
                     {query.length > 0 && (
                         <TouchableOpacity onPress={() => setQuery('')}>
@@ -49,64 +73,52 @@ export default function SearchScreen() {
                         </TouchableOpacity>
                     )}
                 </View>
+                <TouchableOpacity style={styles.iconButton}>
+                    <Filter size={24} color={colors.text} />
+                </TouchableOpacity>
             </View>
 
-            {/* Content */}
-            {query.length > 0 ? (
-                <FlatList
-                    data={filteredPosts}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                        <View style={{ flex: 1, padding: 6 }}>
-                            <DesignCard post={item} onPress={() => router.push(`/post/${item.id}`)} />
-                        </View>
-                    )}
-                    numColumns={2}
-                    contentContainerStyle={styles.results}
-                    columnWrapperStyle={{ justifyContent: 'space-between' }}
-                    ListEmptyComponent={
-                        <View style={styles.emptyState}>
-                            <Text style={{ color: colors.textSecondary }}>No results found for "{query}"</Text>
-                        </View>
-                    }
-                />
-            ) : (
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-                    {/* Recent Searches */}
+            {!isSearching ? (
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                     <View style={styles.section}>
-                        <Text style={[TYPOGRAPHY.h3, { color: colors.text, marginBottom: SIZES.md }]}>Recent Searches</Text>
-                        {recentSearches.map((term, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                style={[styles.recentItem, { borderBottomColor: colors.border }]}
-                                onPress={() => setQuery(term)}
-                            >
-                                <Clock size={18} color={colors.textSecondary} />
-                                <Text style={[styles.recentText, { color: colors.text }]}>{term}</Text>
-                                <X size={16} color={colors.textSecondary} />
+                        <View style={styles.sectionHeader}>
+                            <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Searches</Text>
+                            <TouchableOpacity>
+                                <Text style={[styles.clearAll, { color: colors.primary }]}>Clear All</Text>
                             </TouchableOpacity>
-                        ))}
+                        </View>
+                        {RECENT_SEARCHES.map(renderRecentSearch)}
                     </View>
 
-                    {/* Trending */}
                     <View style={styles.section}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SIZES.md, gap: 8 }}>
-                            <TrendingUp size={20} color={colors.primary} />
-                            <Text style={[TYPOGRAPHY.h3, { color: colors.text }]}>Trending</Text>
+                        <View style={styles.sectionHeader}>
+                            <TrendingUp size={20} color={colors.accent} />
+                            <Text style={[styles.sectionTitle, { color: colors.text, marginLeft: 8 }]}>Trending Topics</Text>
                         </View>
-                        <View style={styles.tagContainer}>
-                            {trendingTags.map((tag) => (
-                                <TouchableOpacity
-                                    key={tag}
-                                    style={[styles.tag, { backgroundColor: colors.surfaceAlt }]}
-                                    onPress={() => setQuery(tag.replace('#', ''))}
-                                >
-                                    <Text style={{ color: colors.text }}>{tag}</Text>
-                                </TouchableOpacity>
-                            ))}
+                        <View style={styles.topicContainer}>
+                            {TRENDING_TOPICS.map(renderTopic)}
                         </View>
                     </View>
                 </ScrollView>
+            ) : (
+                <View style={styles.resultsContainer}>
+                    <View style={styles.resultsHeader}>
+                        <Text style={[styles.resultsCount, { color: colors.textSecondary }]}>Found 128 results</Text>
+                        <View style={styles.viewToggle}>
+                            <TouchableOpacity style={styles.viewIcon}>
+                                <Grid size={18} color={colors.primary} />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                    <FlatList
+                        data={MOCK_POSTS}
+                        renderItem={renderResultItem}
+                        keyExtractor={(item) => item.id}
+                        numColumns={2}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.gridList}
+                    />
+                </View>
             )}
         </SafeAreaView>
     );
@@ -121,57 +133,123 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 16,
         gap: 12,
-        borderBottomWidth: 1,
     },
-    backButton: {
-        padding: 4,
+    iconButton: {
+        width: 44,
+        height: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    searchContainer: {
+    searchBar: {
         flex: 1,
+        height: 48,
+        borderRadius: 14,
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        height: 44,
-        borderRadius: 22,
+        paddingHorizontal: 12,
         gap: 8,
     },
     input: {
         flex: 1,
         fontSize: 16,
-        height: '100%',
+        fontWeight: '500',
     },
-    content: {
-        padding: 24,
+    scrollContent: {
+        paddingHorizontal: 24,
     },
     section: {
-        marginBottom: 32,
+        marginTop: 24,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+    },
+    clearAll: {
+        fontSize: 14,
+        fontWeight: '600',
     },
     recentItem: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         paddingVertical: 16,
         borderBottomWidth: 1,
+    },
+    recentItemLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
         gap: 12,
     },
-    recentText: {
-        flex: 1,
-        fontSize: 16,
+    recentLabel: {
+        fontSize: 15,
+        fontWeight: '500',
     },
-    tagContainer: {
+    topicContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
+        gap: 10,
     },
-    tag: {
+    topicChip: {
         paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
+        paddingVertical: 10,
+        borderRadius: 12,
     },
-    results: {
-        padding: 18,
+    topicText: {
+        fontSize: 14,
+        fontWeight: '600',
     },
-    emptyState: {
-        padding: 40,
+    resultsContainer: {
+        flex: 1,
+    },
+    resultsHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
+        paddingHorizontal: 24,
+        marginBottom: 16,
+    },
+    resultsCount: {
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    viewToggle: {
+        flexDirection: 'row',
+    },
+    viewIcon: {
+        padding: 4,
+    },
+    gridList: {
+        paddingHorizontal: 16,
+        paddingBottom: 24,
+    },
+    gridItem: {
+        width: (width - 48) / 2,
+        height: 180,
+        margin: 8,
+        borderRadius: 20,
+        overflow: 'hidden',
+    },
+    resultImage: {
+        width: '100%',
+        height: '100%',
+    },
+    resultOverlay: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: 12,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+    },
+    resultTitle: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: '600',
     },
 });

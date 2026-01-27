@@ -1,52 +1,28 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { Button } from '../../components/Button';
-import { Input } from '../../components/Input';
-import { Mail, Lock, User, AtSign, CheckCircle } from 'lucide-react-native';
+import { useTheme } from '../../src/hooks/useTheme';
+import { Button } from '../../src/components/atoms/Button';
+import { Input } from '../../src/components/atoms/Input';
+import { Mail, Lock, User, AtSign } from 'lucide-react-native';
 import { MotiView } from 'moti';
 
 export default function SignUpScreen() {
     const router = useRouter();
-    const { colors } = useTheme();
-    const { signUp } = useAuth();
+    const { colors, typography, spacing } = useTheme();
     const [fullName, setFullName] = useState('');
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const handleSignUp = async () => {
-        if (!fullName || !username || !email || !password || !confirmPassword) {
-            Alert.alert('Error', 'Please fill in all fields');
-            return;
-        }
-
-        if (password !== confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match');
-            return;
-        }
-
+    const handleSignUp = () => {
         setLoading(true);
-        try {
-            await signUp(email, password, fullName);
-            // Context handles navigation to tabs or wherever appropriate
-            // If email verification is needed, maybe context handles it, but for this mock, direct to home is usually fine or valid.
-            // But prompt says "Email verification flow".
-            // So I might redirect to verification page instead of tabs in context?
-            // For now, context rewrites `user` and routes to tabs.
-            // If I want to match prompt strictness "Email Verification Screen", I should perhaps NOT log them in immediately but push to verification.
-            // However, `AuthContext.signUp` in my implementation logs them in.
-            // I'll stick to the current flow for simplicity, or change `handleSignUp` to not call `signUp` context immediately but navigate to verification.
-            // Let's assume verifying is part of the flow *before* full access, but for "Still only focus on the ui", mocking success is fine.
-        } catch (error: any) {
-            Alert.alert('Sign Up Failed', error.message);
-        } finally {
+        // Simulate sign up
+        setTimeout(() => {
             setLoading(false);
-        }
+            router.push('/(auth)/email-verification');
+        }, 1500);
     };
 
     return (
@@ -99,14 +75,6 @@ export default function SignUpScreen() {
                             onChangeText={setPassword}
                             isPassword
                             leftIcon={<Lock size={20} color={colors.textSecondary} />}
-                        />
-                        <Input
-                            label="Confirm Password"
-                            placeholder="********"
-                            value={confirmPassword}
-                            onChangeText={setConfirmPassword}
-                            isPassword
-                            leftIcon={<CheckCircle size={20} color={colors.textSecondary} />}
                         />
 
                         <View style={styles.termsContainer}>

@@ -8,7 +8,7 @@ import {
     Platform
 } from 'react-native';
 import { Image } from 'expo-image';
-import { useTheme } from '../hooks/useTheme';
+import { useTheme } from '../../hooks/useTheme';
 import { Heart, Eye, MessageCircle } from 'lucide-react-native';
 import { Link } from 'expo-router';
 

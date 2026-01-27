@@ -1,5 +1,5 @@
 import { useColorScheme } from 'react-native';
-import { COLORS, SPACING, BORDER_RADIUS, SHADOWS, TYPOGRAPHY } from '../constants/theme';
+import { COLORS, SIZES, TYPOGRAPHY, SHADOWS } from '../theme';
 
 export const useTheme = () => {
     const colorScheme = useColorScheme() ?? 'light';
@@ -8,9 +8,9 @@ export const useTheme = () => {
     return {
         isDark: colorScheme === 'dark',
         colors,
-        spacing: SPACING,
-        borderRadius: BORDER_RADIUS,
-        shadows: SHADOWS,
+        spacing: SIZES,
+        borderRadius: SIZES,
         typography: TYPOGRAPHY,
+        shadows: SHADOWS,
     };
 };

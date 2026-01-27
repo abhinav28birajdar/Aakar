@@ -1,62 +1,77 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useTheme } from '../../hooks/useTheme';
+import { useTheme } from '../../src/hooks/useTheme';
 import { Image } from 'expo-image';
-import { ArrowLeft, MessageCircle, MoreHorizontal, Grid, Heart, MapPin, Link as LinkIcon } from 'lucide-react-native';
-import { MOCK_POSTS, MOCK_USERS } from '../../constants/mockData';
-import { Button } from '../../components/Button';
+import { Settings, Share2, Grid, Bookmark, Heart, MessageCircle, Link as LinkIcon, MapPin, MoreVertical, UserPlus } from 'lucide-react-native';
+import { MOCK_POSTS, MOCK_USERS } from '../../src/constants/mockData';
+import { Button } from '../../src/components/atoms/Button';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
 export default function PublicProfileScreen() {
-    const { username } = useLocalSearchParams();
-    const router = useRouter();
     const { colors, typography, spacing } = useTheme();
+    const router = useRouter();
+    const { username } = useLocalSearchParams();
+    const [activeTab, setActiveTab] = useState('posts');
+    const [isFollowing, setIsFollowing] = useState(false);
 
     const user = MOCK_USERS.find(u => u.username === username) || MOCK_USERS[1];
-    const [isFollowing, setIsFollowing] = useState(false);
-    const [activeTab, setActiveTab] = useState('posts');
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.headerIcon}>
-                    <ArrowLeft size={24} color={colors.text} />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.headerIcon}>
-                    <MoreHorizontal size={24} color={colors.text} />
-                </TouchableOpacity>
-            </View>
-
             <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={[styles.headerIcon, { backgroundColor: colors.surfaceAlt }]}>
+                        <ArrowLeft size={20} color={colors.text} />
+                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                        <TouchableOpacity style={[styles.headerIcon, { backgroundColor: colors.surfaceAlt }]}>
+                            <Share2 size={20} color={colors.text} />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.headerIcon, { backgroundColor: colors.surfaceAlt }]}>
+                            <MoreVertical size={20} color={colors.text} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* Profile Info */}
                 <View style={styles.profileInfo}>
-                    <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
+                    <View style={styles.avatarWrapper}>
+                        <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
+                        <View style={[styles.onlineIndicator, { backgroundColor: colors.success, borderColor: colors.background }]} />
+                    </View>
                     <Text style={[styles.name, { color: colors.text }]}>{user.full_name}</Text>
                     <Text style={[styles.username, { color: colors.textSecondary }]}>@{user.username}</Text>
 
                     <View style={styles.metaRow}>
                         <View style={styles.metaItem}>
                             <MapPin size={14} color={colors.textSecondary} />
-                            <Text style={[styles.metaText, { color: colors.textSecondary }]}>London, UK</Text>
+                            <Text style={[styles.metaText, { color: colors.textSecondary }]}>{user.location}</Text>
+                        </View>
+                        <View style={styles.metaItem}>
+                            <LinkIcon size={14} color={colors.textSecondary} />
+                            <Text style={[styles.metaText, { color: colors.primary }]}>portfolio.design</Text>
                         </View>
                     </View>
 
-                    <Text style={[styles.bio, { color: colors.text, textAlign: 'center' }]}>
-                        {user.bio}. Capturing the beauty of minimalism in every pixel.
+                    <Text style={[styles.bio, { color: colors.text }]}>
+                        {user.bio}. Passionate about building products that solve real problems.
                     </Text>
 
+                    {/* Stats */}
                     <View style={styles.statsRow}>
                         <View style={styles.statItem}>
                             <Text style={[styles.statValue, { color: colors.text }]}>{user.posts_count}</Text>
                             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Posts</Text>
                         </View>
                         <View style={styles.statItem}>
-                            <Text style={[styles.statValue, { color: colors.text }]}>3.5k</Text>
+                            <Text style={[styles.statValue, { color: colors.text }]}>{user.followers / 1000}k</Text>
                             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Followers</Text>
                         </View>
                         <View style={styles.statItem}>
-                            <Text style={[styles.statValue, { color: colors.text }]}>800</Text>
+                            <Text style={[styles.statValue, { color: colors.text }]}>{user.following}</Text>
                             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Following</Text>
                         </View>
                     </View>
@@ -64,31 +79,39 @@ export default function PublicProfileScreen() {
                     <View style={styles.actionButtons}>
                         <Button
                             title={isFollowing ? "Following" : "Follow"}
-                            variant={isFollowing ? "outline" : "primary"}
+                            variant={isFollowing ? "secondary" : "primary"}
                             onPress={() => setIsFollowing(!isFollowing)}
                             style={styles.followButton}
+                            icon={!isFollowing && <UserPlus size={18} color="white" />}
                         />
-                        <TouchableOpacity style={[styles.messageButton, { borderColor: colors.border, borderWidth: 1 }]}>
-                            <MessageCircle size={24} color={colors.text} />
+                        <TouchableOpacity
+                            onPress={() => router.push({ pathname: '/messages/[id]', params: { id: user.id } })}
+                            style={[styles.messageButton, { backgroundColor: colors.surfaceAlt }]}
+                        >
+                            <MessageCircle size={22} color={colors.text} />
                         </TouchableOpacity>
                     </View>
                 </View>
 
+                {/* Tabs */}
                 <View style={[styles.tabs, { borderBottomColor: colors.border }]}>
                     <TouchableOpacity
                         onPress={() => setActiveTab('posts')}
                         style={[styles.tab, activeTab === 'posts' && { borderBottomColor: colors.primary }]}
                     >
                         <Grid size={20} color={activeTab === 'posts' ? colors.primary : colors.textSecondary} />
+                        <Text style={[styles.tabText, { color: activeTab === 'posts' ? colors.primary : colors.textSecondary }]}>Work</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={() => setActiveTab('liked')}
                         style={[styles.tab, activeTab === 'liked' && { borderBottomColor: colors.primary }]}
                     >
                         <Heart size={20} color={activeTab === 'liked' ? colors.primary : colors.textSecondary} />
+                        <Text style={[styles.tabText, { color: activeTab === 'liked' ? colors.primary : colors.textSecondary }]}>Liked</Text>
                     </TouchableOpacity>
                 </View>
 
+                {/* Grid */}
                 <View style={styles.grid}>
                     {MOCK_POSTS.map((post) => (
                         <TouchableOpacity
@@ -100,11 +123,18 @@ export default function PublicProfileScreen() {
                         </TouchableOpacity>
                     ))}
                 </View>
+
                 <View style={{ height: 40 }} />
             </ScrollView>
         </SafeAreaView>
     );
 }
+
+const ArrowLeft = (props: any) => (
+    <View {...props}>
+        <Text style={{ fontSize: 24 }}>←</Text>
+    </View>
+); // Fallback for simple arrow
 
 const styles = StyleSheet.create({
     container: {
@@ -114,77 +144,98 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         padding: 16,
+        paddingHorizontal: 24,
     },
     headerIcon: {
         width: 44,
         height: 44,
+        borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
     },
     profileInfo: {
         alignItems: 'center',
-        paddingHorizontal: 24,
+        paddingHorizontal: 32,
+        marginTop: 10,
     },
-    avatar: {
-        width: 100,
-        height: 100,
-        borderRadius: 35,
+    avatarWrapper: {
+        position: 'relative',
         marginBottom: 20,
     },
+    avatar: {
+        width: 110,
+        height: 110,
+        borderRadius: 40,
+    },
+    onlineIndicator: {
+        position: 'absolute',
+        bottom: 4,
+        right: 4,
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        borderWidth: 4,
+    },
     name: {
-        fontSize: 24,
+        fontSize: 26,
         fontWeight: '800',
         marginBottom: 4,
     },
     username: {
         fontSize: 16,
-        fontWeight: '500',
+        fontWeight: '600',
         marginBottom: 16,
     },
     metaRow: {
         flexDirection: 'row',
-        gap: 16,
+        gap: 20,
         marginBottom: 16,
     },
     metaItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        gap: 6,
     },
     metaText: {
         fontSize: 14,
-        fontWeight: '500',
+        fontWeight: '600',
     },
     bio: {
         fontSize: 15,
         lineHeight: 22,
         marginBottom: 24,
+        textAlign: 'center',
     },
     statsRow: {
         flexDirection: 'row',
         width: '100%',
         justifyContent: 'space-around',
-        marginBottom: 24,
+        marginBottom: 32,
+        paddingHorizontal: 10,
     },
     statItem: {
         alignItems: 'center',
     },
     statValue: {
-        fontSize: 18,
-        fontWeight: '700',
+        fontSize: 20,
+        fontWeight: '800',
     },
     statLabel: {
         fontSize: 12,
-        marginTop: 2,
+        fontWeight: '600',
+        marginTop: 4,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
     },
     actionButtons: {
         flexDirection: 'row',
         width: '100%',
         gap: 12,
-        marginBottom: 32,
+        marginBottom: 40,
     },
     followButton: {
         flex: 1,
+        borderRadius: 16,
     },
     messageButton: {
         width: 56,
@@ -199,10 +250,17 @@ const styles = StyleSheet.create({
     },
     tab: {
         flex: 1,
+        flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
         paddingVertical: 16,
-        borderBottomWidth: 2,
+        borderBottomWidth: 3,
         borderBottomColor: 'transparent',
+        gap: 8,
+    },
+    tabText: {
+        fontSize: 15,
+        fontWeight: '700',
     },
     grid: {
         flexDirection: 'row',

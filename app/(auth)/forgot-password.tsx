@@ -1,43 +1,51 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useTheme } from '../../hooks/useTheme';
-import { Button } from '../../components/Button';
-import { Input } from '../../components/Input';
-import { Mail, ArrowLeft } from 'lucide-react-native';
+import { useTheme } from '../../src/hooks/useTheme';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react-native';
+import { MotiView } from 'moti';
 
 export default function ForgotPasswordScreen() {
     const router = useRouter();
-    const { colors, typography, spacing } = useTheme();
+    const { colors } = useTheme();
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
-    const [success, setSuccess] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
 
     const handleReset = () => {
+        if (!email) return;
         setLoading(true);
         setTimeout(() => {
             setLoading(false);
-            setSuccess(true);
+            setIsSubmitted(true);
         }, 1500);
     };
 
-    if (success) {
+    if (isSubmitted) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-                <View style={styles.successContent}>
-                    <Text style={styles.successIcon}>📧</Text>
-                    <Text style={[styles.title, { color: colors.text }]}>Check your email</Text>
-                    <Text style={[styles.subtitle, { color: colors.textSecondary, textAlign: 'center' }]}>
-                        We have sent a password recovery instructions to your email.
+                <View style={styles.content}>
+                    <MotiView
+                        from={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ type: 'spring', duration: 1000 }}
+                        style={[styles.successIcon, { backgroundColor: colors.success + '15' }]}
+                    >
+                        <CheckCircle2 size={60} color={colors.success} />
+                    </MotiView>
+
+                    <Text style={[styles.title, { color: colors.text }]}>Check Your Email</Text>
+                    <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                        We've sent a password reset link to {email}
                     </Text>
+
                     <Button
-                        title="Open Email App"
-                        onPress={() => { }}
-                        style={{ width: '100%', marginTop: 32 }}
+                        title="Back to Login"
+                        onPress={() => router.replace('/(auth)/login')}
+                        style={styles.btn}
                     />
-                    <TouchableOpacity onPress={() => router.push('/(auth)/sign-in')} style={{ marginTop: 24 }}>
-                        <Text style={{ color: colors.primary, fontWeight: '700' }}>Back to Sign In</Text>
-                    </TouchableOpacity>
                 </View>
             </SafeAreaView>
         );
@@ -45,37 +53,46 @@ export default function ForgotPasswordScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={styles.header}>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+            >
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <ArrowLeft size={24} color={colors.text} />
                 </TouchableOpacity>
-            </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <Text style={[styles.title, { color: colors.text }]}>Forgot Password</Text>
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                    Enter your email and we will send you a link to reset your password.
-                </Text>
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    <MotiView
+                        from={{ opacity: 0, translateY: -20 }}
+                        animate={{ opacity: 1, translateY: 0 }}
+                        style={styles.header}
+                    >
+                        <Text style={[styles.title, { color: colors.text }]}>Forgot Password?</Text>
+                        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                            Don't worry, it happens. Enter your email and we'll send you a reset link.
+                        </Text>
+                    </MotiView>
 
-                <View style={styles.form}>
-                    <Input
-                        label="Email Address"
-                        placeholder="name@example.com"
-                        value={email}
-                        onChangeText={setEmail}
-                        leftIcon={<Mail size={20} color={colors.textSecondary} />}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                    />
+                    <View style={styles.form}>
+                        <Input
+                            label="Email Address"
+                            placeholder="name@example.com"
+                            value={email}
+                            onChangeText={setEmail}
+                            icon={<Mail size={20} color={colors.textSecondary} />}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                        />
 
-                    <Button
-                        title="Send Reset Link"
-                        onPress={handleReset}
-                        loading={loading}
-                        style={styles.submitButton}
-                    />
-                </View>
-            </ScrollView>
+                        <Button
+                            title="Send Reset Link"
+                            onPress={handleReset}
+                            loading={loading}
+                            style={styles.btn}
+                        />
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
@@ -84,41 +101,53 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    header: {
-        padding: 24,
-    },
     backButton: {
         width: 44,
         height: 44,
         justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 16,
+        marginTop: 8,
     },
     scrollContent: {
         padding: 24,
+        flexGrow: 1,
+    },
+    content: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
+    },
+    successIcon: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 32,
+        marginTop: -60,
+    },
+    header: {
+        marginTop: 20,
+        marginBottom: 40,
     },
     title: {
-        fontSize: 28,
-        fontWeight: '800',
-        marginBottom: 8,
+        fontSize: 32,
+        fontWeight: '900',
+        marginBottom: 12,
+        textAlign: 'left',
     },
     subtitle: {
         fontSize: 16,
         lineHeight: 24,
-        marginBottom: 32,
+        textAlign: 'left',
     },
     form: {
-        marginTop: 8,
-    },
-    submitButton: {
-        marginTop: 16,
-    },
-    successContent: {
         flex: 1,
-        padding: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
-    successIcon: {
-        fontSize: 64,
-        marginBottom: 24,
+    btn: {
+        marginTop: 16,
+        width: '100%',
     },
 });

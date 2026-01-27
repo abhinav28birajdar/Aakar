@@ -1,17 +1,37 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity } from 'react-native';
-import { useTheme } from '../hooks/useTheme';
-import { ArrowLeft, Search } from 'lucide-react-native';
+import React from 'react';
+import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import { useTheme } from '../src/hooks/useTheme';
+import { ArrowLeft, Search, UserCheck } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { MOCK_USERS } from '../constants/mockData';
-import { Input } from '../components/Input';
-import { Button } from '../components/Button';
+import { MOCK_USERS } from '../src/constants/mockData';
+import { Button } from '../src/components/atoms/Button';
 
 export default function FollowingScreen() {
     const { colors, typography, spacing } = useTheme();
     const router = useRouter();
-    const [search, setSearch] = useState('');
+
+    const renderUser = ({ item }: { item: any }) => (
+        <View style={[styles.userItem, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity
+                style={styles.userInfo}
+                onPress={() => router.push(`/profile/${item.username}`)}
+            >
+                <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
+                <View style={styles.textContainer}>
+                    <Text style={[styles.name, { color: colors.text }]}>{item.full_name}</Text>
+                    <Text style={[styles.username, { color: colors.textSecondary }]}>@{item.username}</Text>
+                </View>
+            </TouchableOpacity>
+            <Button
+                title="Following"
+                variant="secondary"
+                size="sm"
+                onPress={() => { }}
+                style={styles.followButton}
+            />
+        </View>
+    );
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -24,38 +44,22 @@ export default function FollowingScreen() {
             </View>
 
             <View style={styles.searchContainer}>
-                <Input
-                    placeholder="Search following..."
-                    value={search}
-                    onChangeText={setSearch}
-                    leftIcon={<Search size={20} color={colors.textSecondary} />}
-                    style={styles.searchInput}
-                />
+                <View style={[styles.searchBar, { backgroundColor: colors.surfaceAlt }]}>
+                    <Search size={18} color={colors.textSecondary} />
+                    <TextInput
+                        placeholder="Search following"
+                        placeholderTextColor={colors.textSecondary}
+                        style={[styles.input, { color: colors.text }]}
+                    />
+                </View>
             </View>
 
             <FlatList
                 data={MOCK_USERS}
+                renderItem={renderUser}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.list}
-                renderItem={({ item }) => (
-                    <TouchableOpacity
-                        style={styles.item}
-                        onPress={() => router.push(`/profile/${item.username}`)}
-                    >
-                        <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
-                        <View style={styles.content}>
-                            <Text style={[styles.name, { color: colors.text }]}>{item.full_name}</Text>
-                            <Text style={[styles.username, { color: colors.textSecondary }]}>@{item.username}</Text>
-                        </View>
-                        <Button
-                            title="Unfollow"
-                            variant="outline"
-                            size="sm"
-                            onPress={() => { }}
-                            style={styles.actionButton}
-                        />
-                    </TouchableOpacity>
-                )}
+                showsVerticalScrollIndicator={false}
             />
         </SafeAreaView>
     );
@@ -82,28 +86,44 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     searchContainer: {
-        paddingHorizontal: 16,
-        paddingTop: 8,
+        paddingHorizontal: 24,
+        marginBottom: 16,
     },
-    searchInput: {
-        height: 48,
-    },
-    list: {
-        padding: 16,
-    },
-    item: {
+    searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 20,
+        paddingHorizontal: 16,
+        height: 48,
+        borderRadius: 12,
+        gap: 12,
+    },
+    input: {
+        flex: 1,
+        fontSize: 15,
+        fontWeight: '500',
+    },
+    list: {
+        paddingHorizontal: 24,
+    },
+    userItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+    },
+    userInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+        gap: 12,
     },
     avatar: {
         width: 50,
         height: 50,
-        borderRadius: 20,
+        borderRadius: 18,
     },
-    content: {
+    textContainer: {
         flex: 1,
-        marginLeft: 12,
     },
     name: {
         fontSize: 16,
@@ -111,8 +131,9 @@ const styles = StyleSheet.create({
     },
     username: {
         fontSize: 14,
+        fontWeight: '500',
     },
-    actionButton: {
-        paddingHorizontal: 16,
+    followButton: {
+        minWidth: 100,
     },
 });
