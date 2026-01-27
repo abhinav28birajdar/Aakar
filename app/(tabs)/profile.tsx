@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
 import { Image } from 'expo-image';
 import { Settings, Share2, Grid, Bookmark, Heart, Edit2, Link as LinkIcon, MapPin, MoreVertical } from 'lucide-react-native';

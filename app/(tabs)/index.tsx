@@ -3,13 +3,13 @@ import {
     View,
     Text,
     StyleSheet,
-    SafeAreaView,
     FlatList,
     ScrollView,
     TouchableOpacity,
     RefreshControl,
     StatusBar
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
 import { MOCK_POSTS, CATEGORIES } from '../../src/constants/mockData';
 import { DesignCard } from '../../src/components/molecules/DesignCard';
