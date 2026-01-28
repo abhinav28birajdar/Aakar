@@ -4,12 +4,12 @@ import {
     Text,
     StyleSheet,
     ScrollView,
-    SafeAreaView,
     TouchableOpacity,
     Dimensions,
     Share,
     Platform
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { useTheme } from '../../src/hooks/useTheme';
@@ -75,7 +75,7 @@ export default function PostDetailScreen() {
                 </View>
 
                 {/* Content */}
-                <View style={[styles.content, { padding: spacing.lg }]}>
+                <View style={[styles.content, { padding: spacing.lg, backgroundColor: colors.background }]}>
                     <View style={styles.titleRow}>
                         <View style={{ flex: 1 }}>
                             <Text style={[typography.h2, { color: colors.text }]}>{post.title}</Text>

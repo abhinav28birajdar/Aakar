@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
 import { Image } from 'expo-image';
-import { Settings, Share2, Grid, Bookmark, Heart, MessageCircle, Link as LinkIcon, MapPin, MoreVertical, UserPlus } from 'lucide-react-native';
+import { ArrowLeft, Settings, Share2, Grid, Bookmark, Heart, MessageCircle, Link as LinkIcon, MapPin, MoreVertical, UserPlus } from 'lucide-react-native';
 import { MOCK_POSTS, MOCK_USERS } from '../../src/constants/mockData';
 import { Button } from '../../src/components/atoms/Button';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -130,11 +131,7 @@ export default function PublicProfileScreen() {
     );
 }
 
-const ArrowLeft = (props: any) => (
-    <View {...props}>
-        <Text style={{ fontSize: 24 }}>←</Text>
-    </View>
-); // Fallback for simple arrow
+
 
 const styles = StyleSheet.create({
     container: {

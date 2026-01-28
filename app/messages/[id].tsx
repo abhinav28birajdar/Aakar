@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { ArrowLeft, MoreVertical, Send, Image as ImageIcon, Smile, Mic, CheckCheck } from 'lucide-react-native';
+import { ArrowLeft, MoreVertical, Send, Image as ImageIcon, Smile, Mic, CheckCheck, PlusSquare } from 'lucide-react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { MOCK_USERS } from '../../src/constants/mockData';
@@ -46,7 +47,7 @@ export default function ChatScreen() {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
                     <ArrowLeft size={24} color={colors.text} />
@@ -71,8 +72,8 @@ export default function ChatScreen() {
                 showsVerticalScrollIndicator={false}
             />
 
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={80}>
-                <View style={[styles.inputContainer, { borderTopColor: colors.border }]}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}>
+                <View style={[styles.inputContainer, { borderTopColor: colors.border, backgroundColor: colors.background }]}>
                     <TouchableOpacity style={styles.inputAction}>
                         <PlusSquare color={colors.textSecondary} size={24} />
                     </TouchableOpacity>
@@ -105,7 +106,7 @@ export default function ChatScreen() {
     );
 }
 
-const PlusSquare = ImageIcon; // Fallback for simple icon
+
 
 const styles = StyleSheet.create({
     container: {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, FlatList } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
 import { Bell, MessageSquare, Heart, UserPlus, MessageCircle, Filter, Search } from 'lucide-react-native';
 import { Image } from 'expo-image';

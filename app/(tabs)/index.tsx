@@ -34,7 +34,10 @@ export default function HomeScreen() {
                 <Text style={[styles.brand, { color: colors.text }]}>Aakar Feed</Text>
             </View>
             <View style={styles.headerIcons}>
-                <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.surfaceAlt }]}>
+                <TouchableOpacity
+                    style={[styles.iconButton, { backgroundColor: colors.surfaceAlt }]}
+                    onPress={() => router.push('/search')}
+                >
                     <Search size={22} color={colors.text} />
                 </TouchableOpacity>
                 <TouchableOpacity

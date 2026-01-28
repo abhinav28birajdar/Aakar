@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Platform, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
 import { Image as ImageIcon, Plus, X, Camera, Palette, Tag, AlignLeft, ChevronRight, Share2 } from 'lucide-react-native';
 import { Image } from 'expo-image';

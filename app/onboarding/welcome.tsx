@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/hooks/useTheme';
 import { Button } from '../../components/ui/Button';
@@ -101,4 +102,4 @@ const styles = StyleSheet.create({
     },
 });
 
-import { TouchableOpacity } from 'react-native-gesture-handler';
+

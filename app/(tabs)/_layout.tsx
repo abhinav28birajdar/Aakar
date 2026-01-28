@@ -1,8 +1,8 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { useTheme } from '../../src/hooks/useTheme';
-import { Home, Compass, MessageSquare, Bell, User } from 'lucide-react-native';
-import { Platform } from 'react-native';
+import { Home, Compass, PlusSquare, Bell, User } from 'lucide-react-native';
+import { Platform, View } from 'react-native';
 
 export default function TabsLayout() {
     const { colors } = useTheme();
@@ -41,18 +41,31 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
-                name="chat"
+                name="create"
                 options={{
-                    title: 'Chat',
-                    tabBarIcon: ({ color, size }) => <MessageSquare size={size} color={color} />,
-                    tabBarBadge: 3,
+                    title: 'Create',
+                    tabBarIcon: ({ color, size }) => (
+                        <View style={{
+                            backgroundColor: colors.primary,
+                            width: 44,
+                            height: 44,
+                            borderRadius: 14,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginTop: -5
+                        }}>
+                            <PlusSquare size={24} color="white" />
+                        </View>
+                    ),
+                    tabBarLabel: () => null
                 }}
             />
             <Tabs.Screen
-                name="notifications"
+                name="activity"
                 options={{
-                    title: 'Inbox',
+                    title: 'Activity',
                     tabBarIcon: ({ color, size }) => <Bell size={size} color={color} />,
+                    tabBarBadge: 3,
                 }}
             />
             <Tabs.Screen
@@ -60,6 +73,24 @@ export default function TabsLayout() {
                 options={{
                     title: 'Profile',
                     tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
+                }}
+            />
+            <Tabs.Screen
+                name="chat"
+                options={{
+                    href: null, // Hide from tab bar but keep route
+                }}
+            />
+            <Tabs.Screen
+                name="notifications"
+                options={{
+                    href: null,
+                }}
+            />
+            <Tabs.Screen
+                name="home"
+                options={{
+                    href: null,
                 }}
             />
         </Tabs>
