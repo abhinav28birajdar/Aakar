@@ -1,7 +1,7 @@
 # Aakar - Premium Designer Community Platform
 
 <p align="center">
-  <img src="./assets/icon.png" alt="Aakar Logo" width="120px">
+ <img src="src/assets/icon.png" alt="Aakar Logo" width="120px">
 </p>
 
 ## 🚀 Status: Active Development
