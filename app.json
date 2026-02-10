@@ -15,7 +15,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.aakar.platform"
+      "bundleIdentifier": "com.aakar.platform",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,14 +24,24 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.aakar.platform",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./src/assets/favicon.png",
       "bundler": "metro"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-firebase/firestore",
+      "@react-native-firebase/messaging",
+      "@react-native-firebase/storage",
+      [
+        "@notifee/react-native",
+        {}
+      ]
     ],
     "extra": {
       "router": {},

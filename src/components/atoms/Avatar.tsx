@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
-import { useTheme } from '../../src/hooks/useTheme';
+import { useTheme } from '../../hooks/useTheme';
 
 interface AvatarProps {
     source: string;

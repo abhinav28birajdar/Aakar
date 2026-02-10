@@ -1,113 +1,99 @@
+// ============================================================
+// User Actions Modal (Block, Report, etc.)
+// ============================================================
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View, Text, StyleSheet, TouchableOpacity, Alert,
+} from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import {
+  X, Flag, ShieldAlert, UserMinus, Copy, Share2, Bell, BellOff,
+} from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useRouter } from 'expo-router';
-import { Flag, Slash, UserMinus, X } from 'lucide-react-native';
+import { useUserStore } from '../../src/stores/userStore';
 
 export default function UserActionsModal() {
-    const { colors } = useTheme();
-    const router = useRouter();
+  const router = useRouter();
+  const { userId } = useLocalSearchParams<{ userId: string }>();
+  const { colors } = useTheme();
+  const { blockUser, unfollowUser, isFollowing } = useUserStore();
 
-    const ActionItem = ({ icon: Icon, label, color, onPress }: any) => (
-        <TouchableOpacity style={styles.item} onPress={onPress}>
-            <View style={[styles.iconBox, { backgroundColor: color ? color + '15' : colors.surfaceAlt }]}>
-                <Icon size={20} color={color || colors.text} />
-            </View>
-            <Text style={[styles.label, { color: color || colors.text }]}>{label}</Text>
+  const actions = [
+    {
+      label: 'Report User',
+      icon: Flag,
+      color: colors.error,
+      onPress: () => {
+        router.back();
+        setTimeout(() => router.push({ pathname: '/report', params: { targetId: userId!, targetType: 'user' } }), 300);
+      },
+    },
+    {
+      label: 'Block User',
+      icon: ShieldAlert,
+      color: colors.error,
+      onPress: () => {
+        Alert.alert('Block User', 'They won\'t be able to see your profile or contact you.', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Block', style: 'destructive', onPress: () => { blockUser(userId!); router.back(); } },
+        ]);
+      },
+    },
+    {
+      label: 'Unfollow',
+      icon: UserMinus,
+      color: colors.text,
+      onPress: () => { unfollowUser(userId!); router.back(); },
+    },
+    {
+      label: 'Copy Profile Link',
+      icon: Copy,
+      color: colors.text,
+      onPress: () => { router.back(); Alert.alert('Copied', 'Profile link copied to clipboard'); },
+    },
+    {
+      label: 'Share Profile',
+      icon: Share2,
+      color: colors.text,
+      onPress: () => { router.back(); },
+    },
+  ];
+
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <X size={24} color={colors.text} />
         </TouchableOpacity>
-    );
+        <Text style={[styles.title, { color: colors.text }]}>Actions</Text>
+        <View style={{ width: 24 }} />
+      </View>
 
-    return (
-        <View style={styles.overlay}>
-            <TouchableOpacity style={styles.backdrop} onPress={() => router.back()} />
-            <View style={[styles.content, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
-                <View style={styles.handle} />
-                <Text style={[styles.title, { color: colors.text }]}>Actions</Text>
-
-                <ActionItem
-                    icon={Slash}
-                    label="Block User"
-                    color={colors.error}
-                    onPress={() => router.back()}
-                />
-                <ActionItem
-                    icon={Flag}
-                    label="Report User"
-                    color={colors.accent}
-                    onPress={() => {
-                        router.back();
-                        router.push('/report');
-                    }}
-                />
-                <ActionItem
-                    icon={UserMinus}
-                    label="Unfollow"
-                    onPress={() => router.back()}
-                />
-
-                <TouchableOpacity style={[styles.cancelBtn, { backgroundColor: colors.surfaceAlt }]} onPress={() => router.back()}>
-                    <Text style={[styles.cancelText, { color: colors.text }]}>Cancel</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
+      <View style={styles.body}>
+        {actions.map(action => {
+          const Icon = action.icon;
+          return (
+            <TouchableOpacity
+              key={action.label}
+              style={[styles.actionRow, { borderBottomColor: colors.border }]}
+              onPress={action.onPress}
+            >
+              <Icon size={22} color={action.color} />
+              <Text style={[styles.actionLabel, { color: action.color }]}>{action.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-    overlay: {
-        flex: 1,
-        justifyContent: 'flex-end',
-    },
-    backdrop: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-    },
-    content: {
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        padding: 24,
-        paddingBottom: 40,
-        borderTopWidth: 1,
-    },
-    handle: {
-        width: 40,
-        height: 4,
-        borderRadius: 2,
-        backgroundColor: '#ccc',
-        alignSelf: 'center',
-        marginBottom: 20,
-    },
-    title: {
-        fontSize: 18,
-        fontWeight: '800',
-        marginBottom: 20,
-        textAlign: 'center',
-    },
-    item: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 12,
-        gap: 16,
-    },
-    iconBox: {
-        width: 44,
-        height: 44,
-        borderRadius: 14,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    label: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    cancelBtn: {
-        marginTop: 20,
-        paddingVertical: 16,
-        borderRadius: 16,
-        alignItems: 'center',
-    },
-    cancelText: {
-        fontSize: 16,
-        fontWeight: '700',
-    },
+  safe: { flex: 1 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
+  title: { fontSize: 18, fontWeight: '800' },
+  body: { paddingHorizontal: 20 },
+  actionRow: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 16, borderBottomWidth: 0.5 },
+  actionLabel: { fontSize: 16, fontWeight: '600' },
 });

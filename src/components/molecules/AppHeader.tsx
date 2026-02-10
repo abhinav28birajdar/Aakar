@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../../src/hooks/useTheme';
+import { useTheme } from '../../hooks/useTheme';
 import { ArrowLeft, MoreVertical } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 

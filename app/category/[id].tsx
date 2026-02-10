@@ -1,149 +1,87 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Dimensions } from 'react-native';
-import { useTheme } from '../../src/hooks/useTheme';
-import { ArrowLeft, Filter, Search } from 'lucide-react-native';
+// ============================================================
+// Category / Tag Filter Screen - category/[id].tsx
+// ============================================================
+import React, { useMemo } from 'react';
+import {
+  View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Dimensions,
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Image } from 'expo-image';
-import { MOCK_POSTS } from '../../src/constants/mockData';
-import { DesignCard } from '../../src/components/molecules/DesignCard';
+import { ArrowLeft, Heart } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../../src/hooks/useTheme';
+import { MOCK_POSTS } from '../../src/data/mockData';
+import { formatNumber, screenWidth } from '../../src/utils/helpers';
 
-const { width } = Dimensions.get('window');
+const GRID_SIZE = (screenWidth - 48 - 8) / 2;
 
-export default function CategoryDetailScreen() {
-    const { colors, typography, spacing } = useTheme();
-    const router = useRouter();
-    const { id } = useLocalSearchParams();
-    const [activeSort, setActiveSort] = useState('Popular');
+export default function CategoryScreen() {
+  const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { colors } = useTheme();
 
-    const filteredPosts = MOCK_POSTS.filter(p => p.category.includes(id as string) || id === 'All');
+  const categoryPosts = useMemo(() =>
+    MOCK_POSTS.filter(p =>
+      p.category === id ||
+      p.tags.some(t => t.toLowerCase() === id?.toLowerCase())
+    ), [id]);
 
-    return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
-                    <ArrowLeft size={24} color={colors.text} />
-                </TouchableOpacity>
-                <View style={styles.headerTitle}>
-                    <Text style={[styles.title, { color: colors.text }]}>{id}</Text>
-                    <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{filteredPosts.length} designs</Text>
-                </View>
-                <TouchableOpacity style={styles.iconButton}>
-                    <Search size={24} color={colors.text} />
-                </TouchableOpacity>
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top']}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <ArrowLeft size={24} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.title, { color: colors.text }]}>#{id}</Text>
+        <View style={{ width: 24 }} />
+      </View>
+
+      <Text style={[styles.count, { color: colors.textSecondary }]}>
+        {categoryPosts.length} {categoryPosts.length === 1 ? 'post' : 'posts'}
+      </Text>
+
+      <FlatList
+        data={categoryPosts}
+        keyExtractor={item => item.id}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[styles.gridItem, { backgroundColor: colors.surface }]}
+            onPress={() => router.push(`/post/${item.id}`)}
+          >
+            <Image source={{ uri: item.images[0] }} style={styles.gridImage} />
+            <View style={styles.itemInfo}>
+              <Text style={[styles.itemTitle, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
+              <View style={styles.itemStats}>
+                <Heart size={12} color="#FF6B6B" />
+                <Text style={[styles.itemStat, { color: colors.textMuted }]}>{formatNumber(item.likesCount)}</Text>
+              </View>
             </View>
-
-            <View style={styles.filterSection}>
-                <View style={styles.sortContainer}>
-                    {['Popular', 'Latest', 'Following'].map((sort) => (
-                        <TouchableOpacity
-                            key={sort}
-                            onPress={() => setActiveSort(sort)}
-                            style={[
-                                styles.sortChip,
-                                { backgroundColor: activeSort === sort ? colors.primary : 'transparent' }
-                            ]}
-                        >
-                            <Text style={[
-                                styles.sortText,
-                                { color: activeSort === sort ? 'white' : colors.textSecondary }
-                            ]}>
-                                {sort}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-                <TouchableOpacity style={[styles.filterBtn, { backgroundColor: colors.surfaceAlt }]}>
-                    <Filter size={18} color={colors.text} />
-                </TouchableOpacity>
-            </View>
-
-            <FlatList
-                data={filteredPosts}
-                renderItem={({ item }) => (
-                    <DesignCard
-                        post={item}
-                        onPress={() => router.push({ pathname: '/post/[id]', params: { id: item.id } })}
-                    />
-                )}
-                keyExtractor={(item) => item.id}
-                numColumns={1}
-                contentContainerStyle={styles.list}
-                showsVerticalScrollIndicator={false}
-                ListEmptyComponent={
-                    <View style={styles.emptyState}>
-                        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No designs found in this category.</Text>
-                    </View>
-                }
-            />
-        </SafeAreaView>
-    );
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>No posts in this category</Text>
+          </View>
+        }
+      />
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        paddingHorizontal: 8,
-    },
-    iconButton: {
-        width: 44,
-        height: 44,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerTitle: {
-        flex: 1,
-        alignItems: 'center',
-    },
-    title: {
-        fontSize: 18,
-        fontWeight: '800',
-    },
-    subtitle: {
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    filterSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 24,
-        marginBottom: 16,
-    },
-    sortContainer: {
-        flexDirection: 'row',
-        gap: 8,
-    },
-    sortChip: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 10,
-    },
-    sortText: {
-        fontSize: 13,
-        fontWeight: '700',
-    },
-    filterBtn: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    list: {
-        paddingHorizontal: 24,
-        paddingBottom: 40,
-    },
-    emptyState: {
-        marginTop: 100,
-        alignItems: 'center',
-    },
-    emptyText: {
-        fontSize: 16,
-        fontWeight: '500',
-    },
+  safe: { flex: 1 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
+  title: { fontSize: 20, fontWeight: '800' },
+  count: { paddingHorizontal: 20, marginBottom: 16, fontSize: 14 },
+  row: { gap: 8, marginBottom: 8 },
+  gridItem: { width: GRID_SIZE, borderRadius: 14, overflow: 'hidden' },
+  gridImage: { width: '100%', height: GRID_SIZE },
+  itemInfo: { padding: 10 },
+  itemTitle: { fontSize: 13, fontWeight: '700', marginBottom: 4 },
+  itemStats: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  itemStat: { fontSize: 12 },
+  empty: { paddingTop: 60, alignItems: 'center' },
+  emptyText: { fontSize: 15 },
 });

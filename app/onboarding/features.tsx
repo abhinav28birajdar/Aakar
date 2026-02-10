@@ -1,153 +1,94 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Dimensions, TouchableOpacity } from 'react-native';
+// ============================================================
+// Features Carousel
+// ============================================================
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Palette, TrendingUp, Briefcase, ArrowRight } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { Button } from '../../components/ui/Button';
-import { MotiView, AnimatePresence } from 'moti';
-import { ChevronRight, Layout, Share2, Users } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
-const FEATURES = [
-    {
-        title: 'Curated Inspiration',
-        desc: 'Access thousands of high-quality designs from world-class creators.',
-        icon: Layout,
-        color: '#667eea',
-    },
-    {
-        title: 'Share Your Work',
-        desc: 'Showcase your portfolio and get feedback from the global community.',
-        icon: Share2,
-        color: '#FF6B6B',
-    },
-    {
-        title: 'Connect & Collab',
-        desc: 'Build your network and find opportunities to work with top designers.',
-        icon: Users,
-        color: '#4CAF50',
-    },
+const slides = [
+  { id: '1', icon: Palette, title: 'Showcase & Portfolio', desc: 'Create a beautiful portfolio to showcase your best work. Get noticed by top companies and clients worldwide.', color: '#667eea' },
+  { id: '2', icon: TrendingUp, title: 'Learn & Grow', desc: 'Access tutorials, challenges, and mentorship from industry experts. Level up your design skills every day.', color: '#764ba2' },
+  { id: '3', icon: Briefcase, title: 'Work & Earn', desc: 'Find freelance gigs, collaborate with teams, and build your design career. Your next opportunity is here.', color: '#f97316' },
 ];
 
 export default function FeaturesScreen() {
-    const { colors } = useTheme();
-    const router = useRouter();
-    const [index, setIndex] = useState(0);
+  const router = useRouter();
+  const { colors } = useTheme();
+  const [activeIndex, setActiveIndex] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
 
-    const handleNext = () => {
-        if (index < FEATURES.length - 1) {
-            setIndex(index + 1);
-        } else {
-            router.push('/onboarding/permissions');
-        }
-    };
+  const handleNext = () => {
+    if (activeIndex < slides.length - 1) {
+      flatListRef.current?.scrollToIndex({ index: activeIndex + 1 });
+    } else {
+      router.push('/(auth)/sign-up');
+    }
+  };
 
-    const Feature = FEATURES[index];
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
+      <View style={styles.skipRow}>
+        <TouchableOpacity onPress={() => router.push('/(auth)/sign-up')}>
+          <Text style={[styles.skipText, { color: colors.textMuted }]}>Skip</Text>
+        </TouchableOpacity>
+      </View>
 
-    return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-                    <Text style={[styles.skip, { color: colors.textSecondary }]}>Skip</Text>
-                </TouchableOpacity>
-            </View>
+      <FlatList
+        ref={flatListRef}
+        data={slides}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={e => setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => (
+          <View style={[styles.slide, { width }]}>
+            <LinearGradient colors={[item.color, item.color + '80']} style={styles.iconCircle}>
+              <item.icon size={48} color="#fff" />
+            </LinearGradient>
+            <Text style={[styles.slideTitle, { color: colors.text }]}>{item.title}</Text>
+            <Text style={[styles.slideDesc, { color: colors.textSecondary }]}>{item.desc}</Text>
+          </View>
+        )}
+      />
 
-            <View style={styles.content}>
-                <AnimatePresence exitBeforeEnter>
-                    <MotiView
-                        key={index}
-                        from={{ opacity: 0, translateX: 50 }}
-                        animate={{ opacity: 1, translateX: 0 }}
-                        exit={{ opacity: 0, translateX: -50 }}
-                        transition={{ type: 'timing', duration: 400 }}
-                        style={styles.slide}
-                    >
-                        <View style={[styles.iconContainer, { backgroundColor: Feature.color + '15' }]}>
-                            <Feature.icon size={60} color={Feature.color} />
-                        </View>
-                        <Text style={[styles.title, { color: colors.text }]}>{Feature.title}</Text>
-                        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{Feature.desc}</Text>
-                    </MotiView>
-                </AnimatePresence>
+      {/* Dots */}
+      <View style={styles.dotsRow}>
+        {slides.map((_, i) => (
+          <View key={i} style={[styles.dot, { backgroundColor: i === activeIndex ? colors.primary : colors.border, width: i === activeIndex ? 24 : 8 }]} />
+        ))}
+      </View>
 
-                <View style={styles.pagination}>
-                    {FEATURES.map((_, i) => (
-                        <View
-                            key={i}
-                            style={[
-                                styles.dot,
-                                { backgroundColor: i === index ? colors.primary : colors.border, width: i === index ? 24 : 8 }
-                            ]}
-                        />
-                    ))}
-                </View>
-            </View>
-
-            <View style={styles.footer}>
-                <Button
-                    title={index === FEATURES.length - 1 ? "Finish" : "Next"}
-                    onPress={handleNext}
-                    icon={<ChevronRight size={20} color="white" />}
-                    style={styles.btn}
-                />
-            </View>
-        </SafeAreaView>
-    );
+      {/* Next Button */}
+      <View style={styles.buttonRow}>
+        <TouchableOpacity onPress={handleNext} activeOpacity={0.8}>
+          <LinearGradient colors={['#667eea', '#764ba2']} style={styles.nextBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+            <Text style={styles.nextBtnText}>{activeIndex === slides.length - 1 ? 'Get Started' : 'Next'}</Text>
+            <ArrowRight size={20} color="#fff" />
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    header: {
-        alignItems: 'flex-end',
-        padding: 24,
-    },
-    skip: {
-        fontSize: 16,
-        fontWeight: '700',
-    },
-    content: {
-        flex: 1,
-        justifyContent: 'center',
-        paddingHorizontal: 40,
-    },
-    slide: {
-        alignItems: 'center',
-    },
-    iconContainer: {
-        width: 140,
-        height: 140,
-        borderRadius: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 40,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: '900',
-        textAlign: 'center',
-        marginBottom: 16,
-    },
-    subtitle: {
-        fontSize: 16,
-        textAlign: 'center',
-        lineHeight: 24,
-    },
-    pagination: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        gap: 8,
-        marginTop: 60,
-    },
-    dot: {
-        height: 8,
-        borderRadius: 4,
-    },
-    footer: {
-        padding: 40,
-    },
-    btn: {
-        width: '100%',
-    },
+  safe: { flex: 1 },
+  skipRow: { alignItems: 'flex-end', paddingHorizontal: 24, paddingTop: 8 },
+  skipText: { fontSize: 16, fontWeight: '600' },
+  slide: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 },
+  iconCircle: { width: 110, height: 110, borderRadius: 55, justifyContent: 'center', alignItems: 'center', marginBottom: 32 },
+  slideTitle: { fontSize: 28, fontWeight: '800', textAlign: 'center', marginBottom: 12 },
+  slideDesc: { fontSize: 16, textAlign: 'center', lineHeight: 24 },
+  dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 24 },
+  dot: { height: 8, borderRadius: 4 },
+  buttonRow: { paddingHorizontal: 24, paddingBottom: 20 },
+  nextBtn: { height: 56, borderRadius: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
+  nextBtnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
 });

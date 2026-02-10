@@ -1,140 +1,80 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'react-native';
+// ============================================================
+// Followers List Screen
+// ============================================================
+import React, { useState } from 'react';
+import {
+  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { ArrowLeft, Search, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../src/hooks/useTheme';
-import { ArrowLeft, Search, UserPlus, UserCheck } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
-import { MOCK_USERS } from '../src/constants/mockData';
-import { Button } from '../src/components/atoms/Button';
+import { useUserStore } from '../src/stores/userStore';
+import { MOCK_USERS } from '../src/data/mockData';
+import { UserCard } from '../src/components/molecules';
 
 export default function FollowersScreen() {
-    const { colors, typography, spacing } = useTheme();
-    const router = useRouter();
+  const router = useRouter();
+  const { colors } = useTheme();
+  const { followers, isFollowing } = useUserStore();
+  const [query, setQuery] = useState('');
 
-    const renderUser = ({ item }: { item: any }) => (
-        <View style={[styles.userItem, { borderBottomColor: colors.border }]}>
-            <TouchableOpacity
-                style={styles.userInfo}
-                onPress={() => router.push(`/profile/${item.username}`)}
-            >
-                <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
-                <View style={styles.textContainer}>
-                    <Text style={[styles.name, { color: colors.text }]}>{item.full_name}</Text>
-                    <Text style={[styles.username, { color: colors.textSecondary }]}>@{item.username}</Text>
-                </View>
-            </TouchableOpacity>
-            <Button
-                title="Follow"
-                variant="outline"
-                size="sm"
-                onPress={() => { }}
-                style={styles.followButton}
-            />
-        </View>
-    );
+  const followerUsers = MOCK_USERS.filter(u => followers.has(u.id));
+  const filtered = query
+    ? followerUsers.filter(u => u.displayName.toLowerCase().includes(query.toLowerCase()) || u.username.toLowerCase().includes(query.toLowerCase()))
+    : followerUsers;
 
-    return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
-                    <ArrowLeft size={24} color={colors.text} />
-                </TouchableOpacity>
-                <Text style={[styles.title, { color: colors.text }]}>Followers</Text>
-                <View style={{ width: 44 }} />
-            </View>
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top']}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <ArrowLeft size={24} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.title, { color: colors.text }]}>Followers ({followers.size})</Text>
+        <View style={{ width: 24 }} />
+      </View>
 
-            <View style={styles.searchContainer}>
-                <View style={[styles.searchBar, { backgroundColor: colors.surfaceAlt }]}>
-                    <Search size={18} color={colors.textSecondary} />
-                    <TextInput
-                        placeholder="Search followers"
-                        placeholderTextColor={colors.textSecondary}
-                        style={[styles.input, { color: colors.text }]}
-                    />
-                </View>
-            </View>
+      <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Search size={18} color={colors.textMuted} />
+        <TextInput
+          style={[styles.searchInput, { color: colors.text }]}
+          placeholder="Search followers..." placeholderTextColor={colors.textMuted}
+          value={query} onChangeText={setQuery}
+        />
+        {query.length > 0 && (
+          <TouchableOpacity onPress={() => setQuery('')}><X size={18} color={colors.textMuted} /></TouchableOpacity>
+        )}
+      </View>
 
-            <FlatList
-                data={[...MOCK_USERS, ...MOCK_USERS, ...MOCK_USERS]}
-                renderItem={renderUser}
-                keyExtractor={(item, index) => `${item.id}-${index}`}
-                contentContainerStyle={styles.list}
-                showsVerticalScrollIndicator={false}
-            />
-        </SafeAreaView>
-    );
+      <FlatList
+        data={filtered}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => (
+          <UserCard
+            name={item.displayName}
+            username={item.username}
+            avatar={item.avatar}
+            isFollowing={isFollowing(item.id)}
+            onPress={() => router.push(`/profile/${item.username}`)}
+          />
+        )}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>No followers yet</Text>
+          </View>
+        }
+      />
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 16,
-    },
-    iconButton: {
-        width: 44,
-        height: 44,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    title: {
-        fontSize: 18,
-        fontWeight: '700',
-    },
-    searchContainer: {
-        paddingHorizontal: 24,
-        marginBottom: 16,
-    },
-    searchBar: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        height: 48,
-        borderRadius: 12,
-        gap: 12,
-    },
-    input: {
-        flex: 1,
-        fontSize: 15,
-        fontWeight: '500',
-    },
-    list: {
-        paddingHorizontal: 24,
-    },
-    userItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 16,
-        borderBottomWidth: 1,
-    },
-    userInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-        gap: 12,
-    },
-    avatar: {
-        width: 50,
-        height: 50,
-        borderRadius: 18,
-    },
-    textContainer: {
-        flex: 1,
-    },
-    name: {
-        fontSize: 16,
-        fontWeight: '700',
-    },
-    username: {
-        fontSize: 14,
-        fontWeight: '500',
-    },
-    followButton: {
-        minWidth: 90,
-    },
+  safe: { flex: 1 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
+  title: { fontSize: 18, fontWeight: '800' },
+  searchBar: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, borderRadius: 12, paddingHorizontal: 14, height: 44, borderWidth: 1, gap: 8, marginBottom: 12 },
+  searchInput: { flex: 1, fontSize: 15, height: '100%' },
+  empty: { paddingTop: 60, alignItems: 'center' },
+  emptyText: { fontSize: 15 },
 });

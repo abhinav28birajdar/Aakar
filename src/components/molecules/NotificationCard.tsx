@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useTheme } from '../../src/hooks/useTheme';
-import { Avatar } from '../ui/Avatar';
+import { useTheme } from '../../hooks/useTheme';
+import { Avatar } from '../atoms/Avatar';
 import { Heart, MessageCircle, UserPlus, Star } from 'lucide-react-native';
 import { Image } from 'expo-image';
 

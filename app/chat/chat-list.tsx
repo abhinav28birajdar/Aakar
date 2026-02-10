@@ -1,111 +1,107 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, TextInput } from 'react-native';
-import { useTheme } from '../../src/hooks/useTheme';
-import { Search, Plus, MoreHorizontal } from 'lucide-react-native';
+// ============================================================
+// Chat List Screen
+// ============================================================
+import React, { useEffect, useState } from 'react';
+import {
+  View, Text, StyleSheet, FlatList, TouchableOpacity, Image, TextInput,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { MOCK_MESSAGES } from '../../src/constants/mockData';
-import { ChatCard } from '../../components/cards/ChatCard';
+import { ArrowLeft, Search, Plus, Pin, BellOff, X } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../../src/hooks/useTheme';
+import { useChatStore } from '../../src/stores/chatStore';
+import { ChatRoom } from '../../src/types';
+import { timeAgo, truncateText } from '../../src/utils/helpers';
+import { ChatCard } from '../../src/components/molecules';
 
 export default function ChatListScreen() {
-    const { colors } = useTheme();
-    const router = useRouter();
-    const [search, setSearch] = useState('');
+  const router = useRouter();
+  const { colors } = useTheme();
+  const { chatRooms, loadChatRooms, searchChats } = useChatStore();
+  const [query, setQuery] = useState('');
 
-    const chats = MOCK_MESSAGES.map(m => ({
-        id: m.id,
-        name: m.sender.full_name,
-        avatar: m.sender.avatar_url,
-        lastMessage: m.lastMessage,
-        time: m.timestamp,
-        unreadCount: m.unreadCount || 0,
-        online: true,
-    }));
+  useEffect(() => { loadChatRooms(); }, []);
 
-    return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={styles.header}>
-                <Text style={[styles.title, { color: colors.text }]}>Messages</Text>
-                <TouchableOpacity
-                    style={[styles.iconBtn, { backgroundColor: colors.primary }]}
-                    onPress={() => router.push('/chat/create-chat')}
-                >
-                    <Plus size={24} color="white" />
-                </TouchableOpacity>
-            </View>
+  const displayRooms = query.length > 1 ? searchChats(query) : chatRooms;
 
-            <View style={styles.searchSection}>
-                <View style={[styles.searchBar, { backgroundColor: colors.surfaceAlt }]}>
-                    <Search size={20} color={colors.textSecondary} />
-                    <TextInput
-                        placeholder="Search chats..."
-                        placeholderTextColor={colors.textSecondary}
-                        style={[styles.input, { color: colors.text }]}
-                        value={search}
-                        onChangeText={setSearch}
-                    />
-                </View>
-            </View>
+  const getChatName = (room: ChatRoom) => {
+    if (room.isGroup) return room.groupName || 'Group Chat';
+    return room.participants[0]?.displayName || 'Unknown';
+  };
 
-            <FlatList
-                data={chats}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.listContent}
-                renderItem={({ item }) => (
-                    <ChatCard
-                        name={item.name}
-                        avatar={item.avatar}
-                        lastMessage={item.lastMessage}
-                        time={item.time}
-                        unreadCount={item.unreadCount}
-                        online={item.online}
-                        onPress={() => router.push(`/chat/chat-room?id=${item.id}&name=${item.name}&avatar=${item.avatar}`)}
-                    />
-                )}
-            />
-        </SafeAreaView>
-    );
+  const getChatAvatar = (room: ChatRoom) => {
+    if (room.isGroup) return room.groupAvatar || room.participants[0]?.avatar;
+    return room.participants[0]?.avatar;
+  };
+
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top']}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <ArrowLeft size={24} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.title, { color: colors.text }]}>Messages</Text>
+        <TouchableOpacity onPress={() => router.push('/chat/create-chat')}>
+          <Plus size={24} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
+
+      <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Search size={18} color={colors.textMuted} />
+        <TextInput
+          style={[styles.searchInput, { color: colors.text }]}
+          placeholder="Search messages..." placeholderTextColor={colors.textMuted}
+          value={query} onChangeText={setQuery}
+        />
+        {query.length > 0 && (
+          <TouchableOpacity onPress={() => setQuery('')}><X size={18} color={colors.textMuted} /></TouchableOpacity>
+        )}
+      </View>
+
+      <FlatList
+        data={displayRooms}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => (
+          <ChatCard
+            name={getChatName(item)}
+            avatar={getChatAvatar(item)}
+            lastMessage={item.lastMessage?.text || 'No messages yet'}
+            time={item.lastMessage ? timeAgo(item.lastMessage.createdAt) : ''}
+            unreadCount={item.unreadCount}
+            online={!item.isGroup && item.participants[0]?.isOnline}
+            onPress={() => router.push({ pathname: '/messages/[id]', params: { id: item.id } })}
+          />
+        )}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>No conversations</Text>
+            <Text style={[styles.emptyDesc, { color: colors.textMuted }]}>Start chatting with other creators</Text>
+          </View>
+        }
+      />
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 24,
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: '900',
-    },
-    iconBtn: {
-        width: 48,
-        height: 48,
-        borderRadius: 16,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    searchSection: {
-        paddingHorizontal: 24,
-        marginBottom: 8,
-    },
-    searchBar: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        height: 54,
-        borderRadius: 16,
-        gap: 12,
-    },
-    input: {
-        flex: 1,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    listContent: {
-        paddingHorizontal: 24,
-        paddingBottom: 40,
-    },
+  safe: { flex: 1 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
+  title: { fontSize: 22, fontWeight: '900' },
+  searchBar: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, borderRadius: 12, paddingHorizontal: 14, height: 44, borderWidth: 1, gap: 8, marginBottom: 8 },
+  searchInput: { flex: 1, fontSize: 15, height: '100%' },
+  chatRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, gap: 14 },
+  avatar: { width: 52, height: 52, borderRadius: 26 },
+  onlineDot: { position: 'absolute', bottom: 2, right: 2, width: 14, height: 14, borderRadius: 7, backgroundColor: '#4CAF50', borderWidth: 2, borderColor: '#fff' },
+  chatTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  chatNameRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 },
+  chatName: { fontSize: 16, fontWeight: '700' },
+  chatTime: { fontSize: 12 },
+  chatBottom: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  lastMsg: { flex: 1, fontSize: 14 },
+  unreadBadge: { minWidth: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 6 },
+  unreadCount: { color: '#fff', fontSize: 11, fontWeight: '800' },
+  empty: { paddingTop: 80, alignItems: 'center', gap: 8 },
+  emptyTitle: { fontSize: 18, fontWeight: '700' },
+  emptyDesc: { fontSize: 14 },
 });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { useTheme } from '../../src/hooks/useTheme';
+import { useTheme } from '../../hooks/useTheme';
 
 interface BadgeProps {
     label: string | number;

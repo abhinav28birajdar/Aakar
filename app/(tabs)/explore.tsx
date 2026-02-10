@@ -1,231 +1,197 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, TextInput, Dimensions } from 'react-native';
+// ============================================================
+// Explore / Discovery Screen
+// ============================================================
+import React, { useState, useEffect } from 'react';
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Image,
+  TextInput, FlatList, Dimensions, ActivityIndicator,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { Search, TrendingUp, Filter, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { Search, Filter, TrendingUp, Grid, List, Sparkles } from 'lucide-react-native';
-import { Image } from 'expo-image';
-import { CATEGORIES, MOCK_POSTS } from '../../src/constants/mockData';
-import { MotiView } from 'moti';
-import { useRouter } from 'expo-router';
+import { usePostStore } from '../../src/stores/postStore';
+import { useUserStore } from '../../src/stores/userStore';
+import { CATEGORIES, TRENDING_TAGS, MOCK_USERS } from '../../src/data/mockData';
+import { formatNumber, screenWidth } from '../../src/utils/helpers';
+import { Post, UserProfile } from '../../src/types';
 
-const { width } = Dimensions.get('window');
-
-const FEATURED_CATEGORIES = [
-    { id: 1, name: 'UI/UX Design', image: 'https://images.unsplash.com/photo-1586717791821-3f44a563cc4c?q=80&w=400&fit=crop', count: '12k+' },
-    { id: 2, name: 'Logo Design', image: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=400&fit=crop', count: '8k+' },
-    { id: 3, name: 'Branding', image: 'https://images.unsplash.com/photo-1626785774625-ddc7c8241521?q=80&w=400&fit=crop', count: '15k+' },
-    { id: 4, name: '3D Art', image: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=400&fit=crop', count: '5k+' },
-];
+const IMAGE_SIZE = (screenWidth - 48 - 8) / 2;
 
 export default function ExploreScreen() {
-    const { colors, typography, spacing } = useTheme();
-    const router = useRouter();
-    const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
+  const { colors } = useTheme();
+  const { posts, loadFeed, searchPosts } = usePostStore();
+  const [query, setQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<Post[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchUsers, setSearchUsers] = useState<UserProfile[]>([]);
 
-    const renderCategoryCard = ({ item }: { item: typeof FEATURED_CATEGORIES[0] }) => (
-        <TouchableOpacity
-            style={styles.categoryCard}
-            onPress={() => router.push({ pathname: '/category/[id]', params: { id: item.name } })}
-        >
-            <Image source={{ uri: item.image }} style={styles.categoryImage} />
-            <View style={[styles.categoryOverlay, { backgroundColor: 'rgba(0,0,0,0.3)' }]}>
-                <Text style={styles.categoryName}>{item.name}</Text>
-                <Text style={styles.categoryCount}>{item.count} items</Text>
+  useEffect(() => { loadFeed(); }, []);
+
+  useEffect(() => {
+    if (query.length > 1) {
+      setIsSearching(true);
+      const results = searchPosts(query);
+      setSearchResults(results);
+      const users = MOCK_USERS.filter(u =>
+        u.displayName.toLowerCase().includes(query.toLowerCase()) ||
+        u.username.toLowerCase().includes(query.toLowerCase())
+      );
+      setSearchUsers(users);
+      setIsSearching(false);
+    } else {
+      setSearchResults([]);
+      setSearchUsers([]);
+    }
+  }, [query]);
+
+  const displayPosts = query.length > 1 ? searchResults :
+    selectedCategory === 'All' ? posts :
+    posts.filter(p => p.category === selectedCategory || p.tags.includes(selectedCategory));
+
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top']}>
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Search size={18} color={colors.textMuted} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Search designs, creators, tags..."
+            placeholderTextColor={colors.textMuted}
+            value={query}
+            onChangeText={setQuery}
+          />
+          {query.length > 0 && (
+            <TouchableOpacity onPress={() => setQuery('')}>
+              <X size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Trending Tags */}
+        {query.length === 0 && (
+          <View style={styles.trendingSection}>
+            <View style={styles.sectionHeader}>
+              <TrendingUp size={18} color={colors.primary} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Trending</Text>
             </View>
-        </TouchableOpacity>
-    );
-
-    return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={styles.header}>
-                <Text style={[styles.title, { color: colors.text }]}>Explore</Text>
-                <View style={[styles.searchContainer, { backgroundColor: colors.surfaceAlt }]}>
-                    <Search size={20} color={colors.textSecondary} style={styles.searchIcon} />
-                    <TextInput
-                        placeholder="Search for inspiration..."
-                        placeholderTextColor={colors.textSecondary}
-                        style={[styles.searchInput, { color: colors.text }]}
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                    />
-                    <TouchableOpacity style={styles.filterButton}>
-                        <Filter size={20} color={colors.primary} />
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                <View style={styles.sectionHeader}>
-                    <View style={styles.sectionTitleRow}>
-                        <Sparkles size={20} color={colors.accent} />
-                        <Text style={[styles.sectionTitle, { color: colors.text }]}>Featured Categories</Text>
-                    </View>
-                    <TouchableOpacity>
-                        <Text style={[styles.seeAll, { color: colors.primary }]}>See All</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <FlatList
-                    data={FEATURED_CATEGORIES}
-                    renderItem={renderCategoryCard}
-                    keyExtractor={(item) => item.id.toString()}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.horizontalList}
-                />
-
-                <View style={styles.sectionHeader}>
-                    <View style={styles.sectionTitleRow}>
-                        <TrendingUp size={20} color={colors.primary} />
-                        <Text style={[styles.sectionTitle, { color: colors.text }]}>Trending Now</Text>
-                    </View>
-                    <View style={styles.viewToggle}>
-                        <TouchableOpacity style={[styles.toggleIcon, { backgroundColor: colors.surfaceAlt }]}>
-                            <Grid size={18} color={colors.primary} />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                <View style={styles.trendingGrid}>
-                    {MOCK_POSTS.slice(0, 6).map((post, index) => (
-                        <TouchableOpacity
-                            key={post.id}
-                            style={styles.trendingItem}
-                            onPress={() => router.push({ pathname: '/post/[id]', params: { id: post.id } })}
-                        >
-                            <Image source={{ uri: post.image_url }} style={styles.trendingImage} />
-                            <View style={styles.trendingOverlay}>
-                                <Text style={styles.trendingPostTitle} numberOfLines={1}>{post.title}</Text>
-                            </View>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
-                <View style={{ height: 100 }} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+              {TRENDING_TAGS.map(tag => (
+                <TouchableOpacity
+                  key={tag}
+                  style={[styles.trendChip, { backgroundColor: colors.primary + '15' }]}
+                  onPress={() => setQuery(tag)}
+                >
+                  <Text style={[styles.trendText, { color: colors.primary }]}>#{tag}</Text>
+                </TouchableOpacity>
+              ))}
             </ScrollView>
-        </SafeAreaView>
-    );
+          </View>
+        )}
+
+        {/* User Results */}
+        {searchUsers.length > 0 && (
+          <View style={styles.userResults}>
+            <Text style={[styles.resultLabel, { color: colors.textSecondary }]}>Creators</Text>
+            {searchUsers.map(u => (
+              <TouchableOpacity
+                key={u.id}
+                style={[styles.userRow, { borderBottomColor: colors.border }]}
+                onPress={() => router.push(`/profile/${u.username}`)}
+              >
+                <Image source={{ uri: u.avatar }} style={styles.userAvatar} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.userName, { color: colors.text }]}>{u.displayName}</Text>
+                  <Text style={[styles.userHandle, { color: colors.textMuted }]}>@{u.username}</Text>
+                </View>
+                <Text style={[styles.followerCount, { color: colors.textSecondary }]}>{formatNumber(u.followersCount)} followers</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Categories */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catRow} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+          {CATEGORIES.map(cat => {
+            const isActive = selectedCategory === cat;
+            return (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.catChip, { borderColor: isActive ? colors.primary : colors.border, backgroundColor: isActive ? colors.primary + '15' : 'transparent' }]}
+                onPress={() => setSelectedCategory(cat)}
+              >
+                <Text style={[styles.catText, { color: isActive ? colors.primary : colors.textSecondary }]}>{cat}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* Grid */}
+        <View style={styles.grid}>
+          {displayPosts.map((post, i) => (
+            <TouchableOpacity
+              key={post.id}
+              style={[styles.gridItem, { backgroundColor: colors.surface }]}
+              onPress={() => router.push(`/post/${post.id}`)}
+              activeOpacity={0.9}
+            >
+              <Image source={{ uri: post.images[0] }} style={styles.gridImage} resizeMode="cover" />
+              <View style={styles.gridOverlay}>
+                <Text style={styles.gridLikes}>♥ {formatNumber(post.likesCount)}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {displayPosts.length === 0 && !isSearching && (
+          <View style={styles.emptyState}>
+            <Search size={48} color={colors.textMuted} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              {query.length > 0 ? 'No results found' : 'No designs in this category'}
+            </Text>
+            <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
+              {query.length > 0 ? 'Try different keywords' : 'Check back later for new content'}
+            </Text>
+          </View>
+        )}
+
+        <View style={{ height: 100 }} />
+      </ScrollView>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    header: {
-        padding: 24,
-        paddingBottom: 12,
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: '800',
-        marginBottom: 20,
-    },
-    searchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        height: 54,
-        borderRadius: 16,
-    },
-    searchIcon: {
-        marginRight: 12,
-    },
-    searchInput: {
-        flex: 1,
-        fontSize: 16,
-        fontWeight: '500',
-    },
-    filterButton: {
-        padding: 8,
-    },
-    scrollContent: {
-        paddingBottom: 20,
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 24,
-        marginTop: 24,
-        marginBottom: 16,
-    },
-    sectionTitleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-    },
-    seeAll: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    horizontalList: {
-        paddingLeft: 24,
-        paddingRight: 8,
-    },
-    categoryCard: {
-        width: 160,
-        height: 200,
-        borderRadius: 24,
-        marginRight: 16,
-        overflow: 'hidden',
-    },
-    categoryImage: {
-        width: '100%',
-        height: '100%',
-    },
-    categoryOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        justifyContent: 'flex-end',
-        padding: 16,
-    },
-    categoryName: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '700',
-    },
-    categoryCount: {
-        color: 'rgba(255,255,255,0.8)',
-        fontSize: 12,
-        marginTop: 4,
-    },
-    viewToggle: {
-        flexDirection: 'row',
-    },
-    toggleIcon: {
-        padding: 8,
-        borderRadius: 8,
-    },
-    trendingGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        paddingHorizontal: 16,
-    },
-    trendingItem: {
-        width: (width - 48) / 2,
-        height: 180,
-        margin: 8,
-        borderRadius: 20,
-        overflow: 'hidden',
-    },
-    trendingImage: {
-        width: '100%',
-        height: '100%',
-    },
-    trendingOverlay: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        padding: 12,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-    },
-    trendingPostTitle: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: '600',
-    },
+  safe: { flex: 1 },
+  searchContainer: { paddingHorizontal: 16, paddingVertical: 12 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, paddingHorizontal: 14, height: 44, borderWidth: 1, gap: 8 },
+  searchInput: { flex: 1, fontSize: 15, height: '100%' },
+  trendingSection: { marginBottom: 16 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, marginBottom: 12 },
+  sectionTitle: { fontSize: 17, fontWeight: '800' },
+  trendChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
+  trendText: { fontSize: 13, fontWeight: '700' },
+  userResults: { paddingHorizontal: 16, marginBottom: 16 },
+  resultLabel: { fontSize: 13, fontWeight: '700', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 },
+  userRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, gap: 12 },
+  userAvatar: { width: 40, height: 40, borderRadius: 20 },
+  userName: { fontSize: 15, fontWeight: '700' },
+  userHandle: { fontSize: 13 },
+  followerCount: { fontSize: 12 },
+  catRow: { marginBottom: 16 },
+  catChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
+  catText: { fontSize: 12, fontWeight: '600' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 8 },
+  gridItem: { width: IMAGE_SIZE, height: IMAGE_SIZE, borderRadius: 14, overflow: 'hidden' },
+  gridImage: { width: '100%', height: '100%' },
+  gridOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 8, backgroundColor: 'rgba(0,0,0,0.3)' },
+  gridLikes: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  emptyState: { alignItems: 'center', paddingTop: 60, gap: 12 },
+  emptyTitle: { fontSize: 18, fontWeight: '700' },
+  emptyDesc: { fontSize: 14 },
 });

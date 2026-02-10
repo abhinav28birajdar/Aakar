@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useTheme } from '../../src/hooks/useTheme';
-import { Avatar } from '../ui/Avatar';
-import { Badge } from '../ui/Badge';
+import { useTheme } from '../../hooks/useTheme';
+import { Avatar } from '../atoms/Avatar';
+import { Badge } from '../atoms/Badge';
 
 interface ChatCardProps {
     name: string;

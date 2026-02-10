@@ -1,255 +1,143 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, FlatList, ScrollView, Dimensions } from 'react-native';
-import { useTheme } from '../src/hooks/useTheme';
-import { Search as SearchIcon, X, ArrowLeft, Filter, TrendingUp, Clock, Grid, List } from 'lucide-react-native';
+// ============================================================
+// Search Screen
+// ============================================================
+import React, { useState, useEffect } from 'react';
+import {
+  View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, Image,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
-import { MOCK_POSTS } from '../src/constants/mockData';
-import { MotiView } from 'moti';
-
-const { width } = Dimensions.get('window');
-
-const RECENT_SEARCHES = ['Dashboard UI', 'Mobile App Design', 'Logo Branding', '3D Icons'];
-const TRENDING_TOPICS = ['Framer Motion', 'Glassmorphism', 'Bento Grid', 'Cyberpunk', 'Minimalist', 'Landing Page'];
+import { ArrowLeft, Search as SearchIcon, X, TrendingUp } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../src/hooks/useTheme';
+import { usePostStore } from '../src/stores/postStore';
+import { MOCK_USERS, TRENDING_TAGS } from '../src/data/mockData';
+import { formatNumber, timeAgo } from '../src/utils/helpers';
 
 export default function SearchScreen() {
-    const { colors, typography, spacing } = useTheme();
-    const router = useRouter();
-    const [query, setQuery] = useState('');
-    const [isSearching, setIsSearching] = useState(false);
+  const router = useRouter();
+  const { colors } = useTheme();
+  const { searchPosts } = usePostStore();
+  const [query, setQuery] = useState('');
+  const [tab, setTab] = useState<'posts' | 'people'>('posts');
 
-    const renderRecentSearch = (item: string) => (
-        <TouchableOpacity key={item} style={[styles.recentItem, { borderBottomColor: colors.border }]}>
-            <View style={styles.recentItemLeft}>
-                <Clock size={18} color={colors.textSecondary} />
-                <Text style={[styles.recentLabel, { color: colors.text }]}>{item}</Text>
-            </View>
-            <TouchableOpacity onPress={() => { }}>
-                <X size={18} color={colors.textSecondary} />
+  const postResults = query.length > 1 ? searchPosts(query) : [];
+  const userResults = query.length > 1
+    ? MOCK_USERS.filter(u =>
+        u.displayName.toLowerCase().includes(query.toLowerCase()) ||
+        u.username.toLowerCase().includes(query.toLowerCase())
+      )
+    : [];
+
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top']}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <ArrowLeft size={24} color={colors.text} />
+        </TouchableOpacity>
+        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <SearchIcon size={18} color={colors.textMuted} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Search..." placeholderTextColor={colors.textMuted}
+            value={query} onChangeText={setQuery} autoFocus
+          />
+          {query.length > 0 && (
+            <TouchableOpacity onPress={() => setQuery('')}><X size={18} color={colors.textMuted} /></TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {query.length <= 1 ? (
+        <View style={styles.trending}>
+          <View style={styles.trendHeader}>
+            <TrendingUp size={18} color={colors.primary} />
+            <Text style={[styles.trendTitle, { color: colors.text }]}>Trending</Text>
+          </View>
+          {TRENDING_TAGS.map(tag => (
+            <TouchableOpacity key={tag} style={styles.trendItem} onPress={() => setQuery(tag)}>
+              <Text style={[styles.trendTag, { color: colors.text }]}>#{tag}</Text>
             </TouchableOpacity>
-        </TouchableOpacity>
-    );
+          ))}
+        </View>
+      ) : (
+        <>
+          <View style={styles.tabRow}>
+            {(['posts', 'people'] as const).map(t => (
+              <TouchableOpacity
+                key={t}
+                style={[styles.tab, tab === t && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
+                onPress={() => setTab(t)}
+              >
+                <Text style={[styles.tabText, { color: tab === t ? colors.primary : colors.textMuted }]}>
+                  {t.charAt(0).toUpperCase() + t.slice(1)} ({t === 'posts' ? postResults.length : userResults.length})
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-    const renderTopic = (topic: string) => (
-        <TouchableOpacity key={topic} style={[styles.topicChip, { backgroundColor: colors.surfaceAlt }]}>
-            <Text style={[styles.topicText, { color: colors.textSecondary }]}>{topic}</Text>
-        </TouchableOpacity>
-    );
-
-    const renderResultItem = ({ item }: { item: any }) => (
-        <TouchableOpacity
-            style={styles.gridItem}
-            onPress={() => router.push({ pathname: '/post/[id]', params: { id: item.id } })}
-        >
-            <Image source={{ uri: item.image_url }} style={styles.resultImage} />
-            <View style={styles.resultOverlay}>
-                <Text numberOfLines={1} style={styles.resultTitle}>{item.title}</Text>
-            </View>
-        </TouchableOpacity>
-    );
-
-    return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
-                    <ArrowLeft size={24} color={colors.text} />
+          {tab === 'posts' ? (
+            <FlatList
+              data={postResults}
+              keyExtractor={item => item.id}
+              contentContainerStyle={{ paddingBottom: 40 }}
+              renderItem={({ item }) => (
+                <TouchableOpacity style={styles.postRow} onPress={() => router.push(`/post/${item.id}`)}>
+                  <Image source={{ uri: item.images[0] }} style={styles.postThumb} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.postTitle, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
+                    <Text style={[styles.postMeta, { color: colors.textMuted }]}>
+                      by {item.user.displayName} · {formatNumber(item.likesCount)} likes
+                    </Text>
+                  </View>
                 </TouchableOpacity>
-                <View style={[styles.searchBar, { backgroundColor: colors.surfaceAlt }]}>
-                    <SearchIcon size={20} color={colors.textSecondary} />
-                    <TextInput
-                        placeholder="Search Aakar"
-                        placeholderTextColor={colors.textSecondary}
-                        style={[styles.input, { color: colors.text }]}
-                        value={query}
-                        onChangeText={(text) => {
-                            setQuery(text);
-                            setIsSearching(text.length > 0);
-                        }}
-                        autoFocus
-                    />
-                    {query.length > 0 && (
-                        <TouchableOpacity onPress={() => setQuery('')}>
-                            <X size={18} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                    )}
-                </View>
-                <TouchableOpacity style={styles.iconButton}>
-                    <Filter size={24} color={colors.text} />
+              )}
+              ListEmptyComponent={<View style={styles.empty}><Text style={{ color: colors.textMuted }}>No posts found</Text></View>}
+            />
+          ) : (
+            <FlatList
+              data={userResults}
+              keyExtractor={item => item.id}
+              contentContainerStyle={{ paddingBottom: 40 }}
+              renderItem={({ item }) => (
+                <TouchableOpacity style={styles.userRow} onPress={() => router.push(`/profile/${item.username}`)}>
+                  <Image source={{ uri: item.avatar }} style={styles.userAvatar} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.userName, { color: colors.text }]}>{item.displayName}</Text>
+                    <Text style={[styles.userHandle, { color: colors.textMuted }]}>@{item.username}</Text>
+                  </View>
+                  <Text style={[styles.followers, { color: colors.textSecondary }]}>{formatNumber(item.followersCount)}</Text>
                 </TouchableOpacity>
-            </View>
-
-            {!isSearching ? (
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                    <View style={styles.section}>
-                        <View style={styles.sectionHeader}>
-                            <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Searches</Text>
-                            <TouchableOpacity>
-                                <Text style={[styles.clearAll, { color: colors.primary }]}>Clear All</Text>
-                            </TouchableOpacity>
-                        </View>
-                        {RECENT_SEARCHES.map(renderRecentSearch)}
-                    </View>
-
-                    <View style={styles.section}>
-                        <View style={styles.sectionHeader}>
-                            <TrendingUp size={20} color={colors.accent} />
-                            <Text style={[styles.sectionTitle, { color: colors.text, marginLeft: 8 }]}>Trending Topics</Text>
-                        </View>
-                        <View style={styles.topicContainer}>
-                            {TRENDING_TOPICS.map(renderTopic)}
-                        </View>
-                    </View>
-                </ScrollView>
-            ) : (
-                <View style={styles.resultsContainer}>
-                    <View style={styles.resultsHeader}>
-                        <Text style={[styles.resultsCount, { color: colors.textSecondary }]}>Found 128 results</Text>
-                        <View style={styles.viewToggle}>
-                            <TouchableOpacity style={styles.viewIcon}>
-                                <Grid size={18} color={colors.primary} />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                    <FlatList
-                        data={MOCK_POSTS}
-                        renderItem={renderResultItem}
-                        keyExtractor={(item) => item.id}
-                        numColumns={2}
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.gridList}
-                    />
-                </View>
-            )}
-        </SafeAreaView>
-    );
+              )}
+              ListEmptyComponent={<View style={styles.empty}><Text style={{ color: colors.textMuted }}>No users found</Text></View>}
+            />
+          )}
+        </>
+      )}
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        gap: 12,
-    },
-    iconButton: {
-        width: 44,
-        height: 44,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    searchBar: {
-        flex: 1,
-        height: 48,
-        borderRadius: 14,
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 12,
-        gap: 8,
-    },
-    input: {
-        flex: 1,
-        fontSize: 16,
-        fontWeight: '500',
-    },
-    scrollContent: {
-        paddingHorizontal: 24,
-    },
-    section: {
-        marginTop: 24,
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-    },
-    clearAll: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    recentItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: 16,
-        borderBottomWidth: 1,
-    },
-    recentItemLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    recentLabel: {
-        fontSize: 15,
-        fontWeight: '500',
-    },
-    topicContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 10,
-    },
-    topicChip: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 12,
-    },
-    topicText: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    resultsContainer: {
-        flex: 1,
-    },
-    resultsHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 24,
-        marginBottom: 16,
-    },
-    resultsCount: {
-        fontSize: 14,
-        fontWeight: '500',
-    },
-    viewToggle: {
-        flexDirection: 'row',
-    },
-    viewIcon: {
-        padding: 4,
-    },
-    gridList: {
-        paddingHorizontal: 16,
-        paddingBottom: 24,
-    },
-    gridItem: {
-        width: (width - 48) / 2,
-        height: 180,
-        margin: 8,
-        borderRadius: 20,
-        overflow: 'hidden',
-    },
-    resultImage: {
-        width: '100%',
-        height: '100%',
-    },
-    resultOverlay: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        padding: 12,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-    },
-    resultTitle: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: '600',
-    },
+  safe: { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 10 },
+  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: 12, paddingHorizontal: 12, height: 42, borderWidth: 1, gap: 8 },
+  searchInput: { flex: 1, fontSize: 15, height: '100%' },
+  trending: { paddingHorizontal: 20, paddingTop: 20 },
+  trendHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
+  trendTitle: { fontSize: 18, fontWeight: '800' },
+  trendItem: { paddingVertical: 12, borderBottomWidth: 0 },
+  trendTag: { fontSize: 16, fontWeight: '600' },
+  tabRow: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#eee' },
+  tab: { flex: 1, alignItems: 'center', paddingVertical: 14 },
+  tabText: { fontSize: 14, fontWeight: '700' },
+  postRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, gap: 12 },
+  postThumb: { width: 56, height: 56, borderRadius: 10 },
+  postTitle: { fontSize: 15, fontWeight: '700' },
+  postMeta: { fontSize: 12, marginTop: 4 },
+  userRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, gap: 12 },
+  userAvatar: { width: 48, height: 48, borderRadius: 24 },
+  userName: { fontSize: 15, fontWeight: '700' },
+  userHandle: { fontSize: 13 },
+  followers: { fontSize: 12 },
+  empty: { paddingTop: 60, alignItems: 'center' },
 });

@@ -1,6 +1,3 @@
-import React from 'react';
-import ChatListScreen from '../chat/chat-list';
-
-export default function ChatTab() {
-    return <ChatListScreen />;
-}
+// Redirect to chat list
+import { Redirect } from 'expo-router';
+export default function ChatRedirect() { return <Redirect href="/chat/chat-list" />; }

@@ -1,135 +1,115 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+// ============================================================
+// Permissions Request Screen (optional)
+// ============================================================
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Bell, Camera, Image, ArrowRight } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
-import { Button } from '../../components/ui/Button';
-import { Bell, Camera, Image as ImageIcon, ShieldCheck } from 'lucide-react-native';
-import { MotiView } from 'moti';
+import * as Notifications from 'expo-notifications';
+import * as ImagePicker from 'expo-image-picker';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+const PERMISSIONS = [
+  { key: 'notifications', icon: Bell, title: 'Notifications', desc: 'Get updates on likes, comments, and messages', color: '#FF6B6B' },
+  { key: 'camera', icon: Camera, title: 'Camera', desc: 'Take photos for posts and stories', color: '#4ecdc4' },
+  { key: 'photos', icon: Image, title: 'Photo Library', desc: 'Upload images from your gallery', color: '#45B7D1' },
+];
 
 export default function PermissionsScreen() {
-    const { colors } = useTheme();
-    const router = useRouter();
+  const router = useRouter();
+  const { colors } = useTheme();
+  const [granted, setGranted] = useState<Record<string, boolean>>({});
 
-    const PermissionItem = ({ icon: Icon, title, desc }: any) => (
-        <View style={styles.item}>
-            <View style={[styles.iconBox, { backgroundColor: colors.surfaceAlt }]}>
-                <Icon size={24} color={colors.primary} />
-            </View>
-            <View style={styles.textBox}>
-                <Text style={[styles.itemTitle, { color: colors.text }]}>{title}</Text>
-                <Text style={[styles.itemDesc, { color: colors.textSecondary }]}>{desc}</Text>
-            </View>
-        </View>
-    );
+  const requestPermission = async (key: string) => {
+    try {
+      let result = false;
+      if (key === 'notifications') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        result = status === 'granted';
+      } else if (key === 'camera') {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        result = status === 'granted';
+      } else if (key === 'photos') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        result = status === 'granted';
+      }
+      setGranted(prev => ({ ...prev, [key]: result }));
+    } catch {
+      setGranted(prev => ({ ...prev, [key]: false }));
+    }
+  };
 
-    return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={styles.content}>
-                <MotiView
-                    from={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    style={styles.hero}
-                >
-                    <ShieldCheck size={80} color={colors.primary} />
-                    <Text style={[styles.title, { color: colors.text }]}>Data Privacy</Text>
-                    <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                        To provide the best experience, we need access to a few things.
-                    </Text>
-                </MotiView>
+  const handleContinue = () => {
+    router.replace('/(tabs)');
+  };
 
-                <View style={styles.list}>
-                    <PermissionItem
-                        icon={Bell}
-                        title="Notifications"
-                        desc="Stay updated with new designs, likes and messages."
-                    />
-                    <PermissionItem
-                        icon={ImageIcon}
-                        title="Photo Library"
-                        desc="Upload your beautiful designs and change profile picture."
-                    />
-                    <PermissionItem
-                        icon={Camera}
-                        title="Camera"
-                        desc="Take photos directly for your posts or profile."
-                    />
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
+      <View style={styles.content}>
+        <Text style={[styles.title, { color: colors.text }]}>Enable Permissions</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          These help you get the most out of Aakar
+        </Text>
+
+        <View style={styles.permList}>
+          {PERMISSIONS.map(p => {
+            const Icon = p.icon;
+            const isGranted = granted[p.key];
+            return (
+              <View key={p.key} style={[styles.permRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View style={[styles.iconCircle, { backgroundColor: p.color + '20' }]}>
+                  <Icon size={22} color={p.color} />
                 </View>
-            </View>
-
-            <View style={styles.footer}>
-                <Button
-                    title="Allow & Continue"
-                    onPress={() => router.replace('/(auth)/register')}
-                    style={styles.btn}
-                />
-                <TouchableOpacity onPress={() => router.replace('/(auth)/register')}>
-                    <Text style={[styles.later, { color: colors.textSecondary }]}>I'll do it later</Text>
+                <View style={styles.permInfo}>
+                  <Text style={[styles.permTitle, { color: colors.text }]}>{p.title}</Text>
+                  <Text style={[styles.permDesc, { color: colors.textSecondary }]}>{p.desc}</Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.allowBtn, { backgroundColor: isGranted ? '#4CAF50' : colors.primary }]}
+                  onPress={() => requestPermission(p.key)}
+                  disabled={isGranted}
+                >
+                  <Text style={styles.allowText}>{isGranted ? 'Granted' : 'Allow'}</Text>
                 </TouchableOpacity>
-            </View>
-        </SafeAreaView>
-    );
+              </View>
+            );
+          })}
+        </View>
+      </View>
+
+      <View style={styles.bottom}>
+        <TouchableOpacity onPress={handleContinue} style={{ width: '100%' }} activeOpacity={0.8}>
+          <LinearGradient colors={['#667eea', '#764ba2']} style={styles.btn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+            <Text style={styles.btnText}>Continue</Text>
+            <ArrowRight size={20} color="#fff" />
+          </LinearGradient>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleContinue} style={styles.skipBtn}>
+          <Text style={[styles.skipText, { color: colors.textSecondary }]}>Skip for now</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: 32,
-        paddingTop: 40,
-    },
-    hero: {
-        alignItems: 'center',
-        marginBottom: 48,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: '900',
-        marginTop: 20,
-    },
-    subtitle: {
-        fontSize: 15,
-        textAlign: 'center',
-        marginTop: 12,
-        lineHeight: 22,
-    },
-    list: {
-        gap: 24,
-    },
-    item: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 16,
-    },
-    iconBox: {
-        width: 50,
-        height: 50,
-        borderRadius: 16,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    textBox: {
-        flex: 1,
-    },
-    itemTitle: {
-        fontSize: 16,
-        fontWeight: '700',
-    },
-    itemDesc: {
-        fontSize: 13,
-        marginTop: 2,
-    },
-    footer: {
-        padding: 40,
-        gap: 16,
-        alignItems: 'center',
-    },
-    btn: {
-        width: '100%',
-    },
-    later: {
-        fontSize: 14,
-        fontWeight: '700',
-    },
+  safe: { flex: 1 },
+  content: { flex: 1, paddingHorizontal: 24, paddingTop: 40 },
+  title: { fontSize: 28, fontWeight: '800', marginBottom: 8 },
+  subtitle: { fontSize: 15, marginBottom: 32, lineHeight: 22 },
+  permList: { gap: 16 },
+  permRow: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, borderWidth: 1, gap: 14 },
+  iconCircle: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center' },
+  permInfo: { flex: 1 },
+  permTitle: { fontSize: 16, fontWeight: '700', marginBottom: 2 },
+  permDesc: { fontSize: 13, lineHeight: 18 },
+  allowBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
+  allowText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  bottom: { paddingHorizontal: 24, paddingBottom: 32, alignItems: 'center' },
+  btn: { height: 56, borderRadius: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
+  btnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  skipBtn: { marginTop: 16 },
+  skipText: { fontSize: 15, fontWeight: '600' },
 });

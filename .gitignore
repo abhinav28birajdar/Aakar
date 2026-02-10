@@ -39,3 +39,14 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Firebase & Sensitive
+google-services.json
+GoogleService-Info.plist
+.env
+.env.*
+
+# Project Analysis & Documentation
+SUMMARY.md
+firestore-structure.ts
+project_analysis.md

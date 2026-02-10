@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
-import { useTheme } from '../../src/hooks/useTheme';
+import { useTheme } from '../../hooks/useTheme';
 import { ArrowLeft, Video, Phone } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { Avatar } from '../ui/Avatar';
+import { Avatar } from '../atoms/Avatar';
 
 interface ChatHeaderProps {
     name: string;
