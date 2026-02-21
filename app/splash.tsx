@@ -5,7 +5,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useAuthStore } from '../src/stores/authStore';
+import { useAuthStore } from '../src/context/stores/authStore';
 
 const { width, height } = Dimensions.get('window');
 

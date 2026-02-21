@@ -14,8 +14,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { usePostStore } from '../../src/stores/postStore';
-import { CATEGORIES, SOFTWARE_LIST, SKILL_TAGS } from '../../src/data/mockData';
+import { usePostStore } from '../../src/context/stores/postStore';
+import { CATEGORIES, SOFTWARE_LIST, SKILL_TAGS } from '../../src/config/constants';
 import { PostCategory, PostVisibility } from '../../src/types';
 
 const VISIBILITY_OPTIONS: { value: PostVisibility; label: string; icon: any }[] = [

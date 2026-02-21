@@ -14,9 +14,9 @@ import {
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useAuthStore } from '../../src/stores/authStore';
-import { usePostStore } from '../../src/stores/postStore';
-import { useUserStore } from '../../src/stores/userStore';
+import { useAuthStore } from '../../src/context/stores/authStore';
+import { usePostStore } from '../../src/context/stores/postStore';
+import { useUserStore } from '../../src/context/stores/userStore';
 import { formatNumber, screenWidth } from '../../src/utils/helpers';
 import { Post } from '../../src/types';
 
@@ -37,7 +37,7 @@ export default function ProfileScreen() {
   if (!user) return null;
 
   const stats = [
-    { label: 'Posts', value: formatNumber(user.postsCount), onPress: () => {} },
+    { label: 'Posts', value: formatNumber(user.postsCount), onPress: () => { } },
     { label: 'Followers', value: formatNumber(user.followersCount), onPress: () => router.push('/followers') },
     { label: 'Following', value: formatNumber(user.followingCount), onPress: () => router.push('/following') },
   ];
@@ -49,7 +49,7 @@ export default function ProfileScreen() {
         <View style={styles.header}>
           <Text style={[styles.username, { color: colors.text }]}>@{user.username}</Text>
           <View style={styles.headerRight}>
-            <TouchableOpacity onPress={() => router.push('/analytics')} style={styles.iconBtn}>
+            <TouchableOpacity onPress={() => router.push('/dashboard')} style={styles.iconBtn}>
               <Eye size={22} color={colors.text} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push('/settings')} style={styles.iconBtn}>

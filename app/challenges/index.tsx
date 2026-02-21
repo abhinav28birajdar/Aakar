@@ -10,19 +10,25 @@ import { Trophy, Users, Clock, ArrowRight, ArrowLeft } from 'lucide-react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../src/hooks/useTheme';
-import { MOCK_CHALLENGES } from '../../src/data/mockData';
+import { useChallengeStore } from '../../src/context/stores/challengeStore';
 import { formatNumber } from '../../src/utils/helpers';
+import { Challenge } from '../../src/types';
 
 const { width } = Dimensions.get('window');
 
 export default function ChallengesScreen() {
     const router = useRouter();
     const { colors } = useTheme();
+    const { challenges, loadChallenges, isLoading } = useChallengeStore();
 
-    const activeChallenges = MOCK_CHALLENGES.filter(c => c.status === 'active');
-    const upcomingChallenges = MOCK_CHALLENGES.filter(c => c.status === 'upcoming');
+    React.useEffect(() => {
+        loadChallenges();
+    }, []);
 
-    const renderChallengeCard = ({ item }: { item: typeof MOCK_CHALLENGES[0] }) => (
+    const activeChallenges = challenges.filter(c => c.status === 'active');
+    const upcomingChallenges = challenges.filter(c => c.status === 'upcoming');
+
+    const renderChallengeCard = ({ item }: { item: Challenge }) => (
         <TouchableOpacity
             style={[styles.card, { backgroundColor: colors.surface }]}
             onPress={() => router.push(`/challenges/${item.id}`)}

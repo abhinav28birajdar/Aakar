@@ -9,15 +9,24 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Play, Bookmark, Share2, Star, Clock, List } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { MOCK_TUTORIALS } from '../../src/data/mockData';
+import { useTutorialStore } from '../../src/context/stores/tutorialStore';
 import { Button } from '../../src/components/atoms';
 
 export default function TutorialDetailScreen() {
     const router = useRouter();
     const { id } = useLocalSearchParams<{ id: string }>();
     const { colors } = useTheme();
+    const { getTutorialLocal, loadTutorials } = useTutorialStore();
 
-    const tutorial = MOCK_TUTORIALS.find(t => t.id === id) || MOCK_TUTORIALS[0];
+    const tutorial = getTutorialLocal(id as string);
+
+    React.useEffect(() => {
+        if (!tutorial) {
+            loadTutorials();
+        }
+    }, [id]);
+
+    if (!tutorial) return null;
 
     return (
         <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top']}>

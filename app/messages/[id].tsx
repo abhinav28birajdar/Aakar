@@ -4,7 +4,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, Image,
-  TextInput, KeyboardAvoidingView, Platform,
+  TextInput, KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -12,10 +12,11 @@ import {
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useChatStore } from '../../src/stores/chatStore';
-import { useAuthStore } from '../../src/stores/authStore';
+import { useChatStore } from '../../src/context/stores/chatStore';
+import { useAuthStore } from '../../src/context/stores/authStore';
 import { ChatMessage } from '../../src/types';
 import { timeAgo, formatTime } from '../../src/utils/helpers';
+import { ResponsiveContainer } from '../../src/components/atoms';
 
 function MessageBubble({ msg, isOwn, colors }: { msg: ChatMessage; isOwn: boolean; colors: any }) {
   if (msg.isDeleted) {
@@ -76,7 +77,7 @@ export default function ChatRoomScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
   const currentUser = useAuthStore(s => s.user);
-  const { chatRooms, messages, loadMessages, sendMessage, markAsRead } = useChatStore();
+  const { chatRooms, messages, subscribeToMessages, sendMessage, markAsRead, unsubscribeAll } = useChatStore();
   const [inputText, setInputText] = useState('');
   const flatListRef = useRef<FlatList>(null);
 
@@ -85,7 +86,7 @@ export default function ChatRoomScreen() {
 
   useEffect(() => {
     if (id) {
-      loadMessages(id);
+      subscribeToMessages(id);
       markAsRead(id);
     }
   }, [id]);
@@ -104,70 +105,82 @@ export default function ChatRoomScreen() {
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {/* Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <ArrowLeft size={24} color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerInfo} onPress={() => {
-            if (!room?.isGroup && room?.participants[0]) {
-              router.push(`/profile/${room.participants[0].username}`);
-            }
-          }}>
-            <Image source={{ uri: chatAvatar }} style={styles.headerAvatar} />
-            <View>
-              <Text style={[styles.headerName, { color: colors.text }]}>{chatName}</Text>
-              <Text style={[styles.headerStatus, { color: isOnline ? '#4CAF50' : colors.textMuted }]}>
-                {isOnline ? 'Online' : room?.isGroup ? `${room.participants.length} members` : 'Offline'}
-              </Text>
+        <ResponsiveContainer maxWidth={800}>
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity onPress={() => router.back()}>
+              <ArrowLeft size={24} color={colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.headerInfo} onPress={() => {
+              if (!room?.isGroup && room?.participants[0]) {
+                router.push(`/profile/${room.participants[0].username}`);
+              }
+            }}>
+              <Image source={{ uri: chatAvatar }} style={styles.headerAvatar} />
+              <View>
+                <Text style={[styles.headerName, { color: colors.text }]}>{chatName}</Text>
+                <Text style={[styles.headerStatus, { color: isOnline ? '#4CAF50' : colors.textMuted }]}>
+                  {isOnline ? 'Online' : room?.isGroup ? `${room.participants.length} members` : 'Offline'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={styles.headerBtn}
+                onPress={() => Alert.alert('Voice Call', 'Voice call feature coming soon!')}
+              >
+                <Phone size={20} color={colors.text} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.headerBtn}
+                onPress={() => Alert.alert('Video Call', 'Video call feature coming soon!')}
+              >
+                <Video size={20} color={colors.text} />
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-          <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.headerBtn}>
-              <Phone size={20} color={colors.text} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.headerBtn}>
-              <Video size={20} color={colors.text} />
-            </TouchableOpacity>
           </View>
-        </View>
+        </ResponsiveContainer>
 
         {/* Messages */}
-        <FlatList
-          ref={flatListRef}
-          data={chatMessages}
-          keyExtractor={item => item.id}
-          renderItem={({ item }) => (
-            <MessageBubble
-              msg={item}
-              isOwn={item.senderId === (currentUser?.id || '1')}
-              colors={colors}
-            />
-          )}
-          contentContainerStyle={styles.messagesList}
-          inverted={false}
-          showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
-        />
+        <ResponsiveContainer maxWidth={800}>
+          <FlatList
+            ref={flatListRef}
+            data={chatMessages}
+            keyExtractor={item => item.id}
+            renderItem={({ item }) => (
+              <MessageBubble
+                msg={item}
+                isOwn={item.senderId === (currentUser?.id || '1')}
+                colors={colors}
+              />
+            )}
+            contentContainerStyle={styles.messagesList}
+            inverted={false}
+            showsVerticalScrollIndicator={false}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          />
+        </ResponsiveContainer>
 
         {/* Input */}
-        <View style={[styles.inputRow, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-          <TouchableOpacity style={styles.inputIcon}>
-            <ImageIcon size={22} color={colors.textMuted} />
-          </TouchableOpacity>
-          <TextInput
-            style={[styles.textInput, { color: colors.text, backgroundColor: colors.surface }]}
-            placeholder="Type a message..."
-            placeholderTextColor={colors.textMuted}
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-          />
-          <TouchableOpacity onPress={handleSend} disabled={!inputText.trim()}
-            style={[styles.sendBtn, { backgroundColor: inputText.trim() ? '#667eea' : colors.surface }]}
-          >
-            <Send size={18} color={inputText.trim() ? '#fff' : colors.textMuted} />
-          </TouchableOpacity>
-        </View>
+        <ResponsiveContainer maxWidth={800}>
+          <View style={[styles.inputRow, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+            <TouchableOpacity style={styles.inputIcon}>
+              <ImageIcon size={22} color={colors.textMuted} />
+            </TouchableOpacity>
+            <TextInput
+              style={[styles.textInput, { color: colors.text, backgroundColor: colors.surface }]}
+              placeholder="Type a message..."
+              placeholderTextColor={colors.textMuted}
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+            />
+            <TouchableOpacity onPress={handleSend} disabled={!inputText.trim()}
+              style={[styles.sendBtn, { backgroundColor: inputText.trim() ? '#667eea' : colors.surface }]}
+            >
+              <Send size={18} color={inputText.trim() ? '#fff' : colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+        </ResponsiveContainer>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

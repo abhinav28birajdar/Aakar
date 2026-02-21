@@ -1,32 +1,42 @@
 // ============================================================
 // Job Board / Gig Marketplace Screen
 // ============================================================
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, FlatList, TouchableOpacity, Image, TextInput,
+    View, Text, StyleSheet, FlatList, TouchableOpacity, Image, TextInput, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Briefcase, MapPin, DollarSign, Clock, Search, Filter, ArrowLeft } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
 import { Button } from '../../src/components/atoms';
-
-const MOCK_JOBS = [
-    { id: '1', title: 'Senior UI/UX Designer', company: 'TechFlow', location: 'Remote', salary: '$80k - $120k', type: 'Full-time', logo: 'https://images.unsplash.com/photo-1549923746-c502d488b3aa?w=100' },
-    { id: '2', title: 'Brand Identity Design', company: 'Nova Studio', location: 'London, UK', salary: '$4k - $6k', type: 'Gig/Project', logo: 'https://images.unsplash.com/photo-1572021335469-31716248d16c?w=100' },
-    { id: '3', title: 'Product Designer (Contract)', company: 'Aakar Creative', location: 'Remote', salary: '$60/hr', type: 'Contract', logo: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=100' },
-    { id: '4', title: 'Junior Illustrator', company: 'SketchBook', location: 'New York, US', salary: '$45k - $55k', type: 'Full-time', logo: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=100' },
-];
+import { useJobStore } from '../../src/context/stores/jobStore';
+import { Job } from '../../src/types';
+import { timeAgo } from '../../src/utils/helpers';
+import { DEFAULT_AVATAR } from '../../src/config/constants';
 
 export default function JobBoardScreen() {
     const router = useRouter();
     const { colors } = useTheme();
+    const { jobs, isLoading, loadJobs, searchJobs, searchResults } = useJobStore();
     const [query, setQuery] = useState('');
 
-    const renderJobItem = ({ item }: { item: typeof MOCK_JOBS[0] }) => (
+    useEffect(() => {
+        loadJobs();
+    }, []);
+
+    useEffect(() => {
+        if (query.length > 2) {
+            searchJobs(query);
+        }
+    }, [query]);
+
+    const displayJobs = query.length > 2 ? searchResults : jobs;
+
+    const renderJobItem = ({ item }: { item: Job }) => (
         <TouchableOpacity style={[styles.jobCard, { backgroundColor: colors.surface }]} activeOpacity={0.7}>
             <View style={styles.jobHeader}>
-                <Image source={{ uri: item.logo }} style={styles.companyLogo} />
+                <Image source={{ uri: item.companyLogo || DEFAULT_AVATAR }} style={styles.companyLogo} />
                 <View style={{ flex: 1 }}>
                     <Text style={[styles.jobTitle, { color: colors.text }]}>{item.title}</Text>
                     <Text style={[styles.companyName, { color: colors.textSecondary }]}>{item.company}</Text>
@@ -39,10 +49,12 @@ export default function JobBoardScreen() {
                     <MapPin size={14} color={colors.textSecondary} />
                     <Text style={[styles.metaText, { color: colors.textSecondary }]}>{item.location}</Text>
                 </View>
-                <View style={styles.metaBadge}>
-                    <DollarSign size={14} color={colors.textSecondary} />
-                    <Text style={[styles.metaText, { color: colors.textSecondary }]}>{item.salary}</Text>
-                </View>
+                {item.salaryRange && (
+                    <View style={styles.metaBadge}>
+                        <DollarSign size={14} color={colors.textSecondary} />
+                        <Text style={[styles.metaText, { color: colors.textSecondary }]}>{item.salaryRange}</Text>
+                    </View>
+                )}
                 <View style={styles.metaBadge}>
                     <Clock size={14} color={colors.textSecondary} />
                     <Text style={[styles.metaText, { color: colors.textSecondary }]}>{item.type}</Text>
@@ -50,7 +62,7 @@ export default function JobBoardScreen() {
             </View>
 
             <View style={styles.jobFooter}>
-                <Text style={[styles.timeAgo, { color: colors.textMuted }]}>Posted 2h ago</Text>
+                <Text style={[styles.timeAgo, { color: colors.textMuted }]}>Posted {timeAgo(item.createdAt)}</Text>
                 <Button title="Apply Now" onPress={() => { }} size="sm" style={{ paddingHorizontal: 20 }} />
             </View>
         </TouchableOpacity>
@@ -81,18 +93,29 @@ export default function JobBoardScreen() {
                 </View>
             </View>
 
-            <FlatList
-                data={MOCK_JOBS}
-                renderItem={renderJobItem}
-                keyExtractor={item => item.id}
-                contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
-                ListHeaderComponent={
-                    <View style={styles.listHeader}>
-                        <Text style={[styles.listTitle, { color: colors.text }]}>Featured Opportunities</Text>
-                        <Text style={[styles.listSubtitle, { color: colors.textSecondary }]}>{MOCK_JOBS.length} jobs matched your profile</Text>
-                    </View>
-                }
-            />
+            {isLoading && displayJobs.length === 0 ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator color={colors.primary} />
+                </View>
+            ) : (
+                <FlatList
+                    data={displayJobs}
+                    renderItem={renderJobItem}
+                    keyExtractor={item => item.id}
+                    contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+                    ListHeaderComponent={
+                        <View style={styles.listHeader}>
+                            <Text style={[styles.listTitle, { color: colors.text }]}>Featured Opportunities</Text>
+                            <Text style={[styles.listSubtitle, { color: colors.textSecondary }]}>{displayJobs.length} jobs matched your profile</Text>
+                        </View>
+                    }
+                    ListEmptyComponent={
+                        <View style={{ alignItems: 'center', marginTop: 40 }}>
+                            <Text style={{ color: colors.textSecondary }}>No jobs found</Text>
+                        </View>
+                    }
+                />
+            )}
         </SafeAreaView>
     );
 }

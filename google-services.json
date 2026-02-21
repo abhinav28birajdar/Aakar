@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "166620988404",
+    "project_id": "aakar-app-c129a",
+    "storage_bucket": "aakar-app-c129a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:166620988404:android:53d552cee9c58dfbcb6fa1",
+        "android_client_info": {
+          "package_name": "com.abhinav.aakar"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDnG4lmjiHZ7O74k3f-QdyUjHYOxdUr4zY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

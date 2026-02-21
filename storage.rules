@@ -1,0 +1,38 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Auth Check Helper
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isResourceOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    match /avatars/{userId} {
+      allow read: if true;
+      allow write, delete: if isResourceOwner(userId);
+    }
+    
+    match /covers/{userId} {
+      allow read: if true;
+      allow write, delete: if isResourceOwner(userId);
+    }
+
+    match /posts/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write, delete: if isResourceOwner(userId);
+    }
+
+    match /chat/{roomId}/{fileName} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+  }
+}

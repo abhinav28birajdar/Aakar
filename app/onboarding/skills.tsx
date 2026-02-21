@@ -7,8 +7,8 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Search, Check, ArrowRight } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useAuthStore } from '../../src/stores/authStore';
-import { SKILL_TAGS, SOFTWARE_LIST, CATEGORIES } from '../../src/data/mockData';
+import { useAuthStore } from '../../src/context/stores/authStore';
+import { SKILL_TAGS, SOFTWARE_LIST, CATEGORIES } from '../../src/config/constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SkillsScreen() {

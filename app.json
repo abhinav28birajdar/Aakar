@@ -15,18 +15,19 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.aakar.platform",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "bundleIdentifier": "com.abhinav.aakar",
+      "googleServicesFile": "$GOOGLE_SERVICES_INFO_PLIST"
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./src/assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.aakar.platform",
-      "edgeToEdgeEnabled": true,
-      "googleServicesFile": "./google-services.json"
-    },
+  "adaptiveIcon": {
+    "foregroundImage": "./src/assets/adaptive-icon.png",
+    "backgroundColor": "#ffffff"
+  },
+  "package": "com.abhinav.aakar",
+  "versionCode": 1,
+  "edgeToEdgeEnabled": true,
+  "googleServicesFile": "./google-services.json"
+},
     "web": {
       "favicon": "./src/assets/favicon.png",
       "bundler": "metro"
@@ -34,14 +35,7 @@
     "plugins": [
       "expo-router",
       "@react-native-firebase/app",
-      "@react-native-firebase/auth",
-      "@react-native-firebase/firestore",
-      "@react-native-firebase/messaging",
-      "@react-native-firebase/storage",
-      [
-        "@notifee/react-native",
-        {}
-      ]
+      "@react-native-firebase/auth"
     ],
     "extra": {
       "router": {},

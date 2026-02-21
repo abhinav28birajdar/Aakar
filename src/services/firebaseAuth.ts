@@ -3,6 +3,7 @@
 // ============================================================
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
+import storage from '@react-native-firebase/storage';
 import { UserProfile, UserRole } from '../types';
 
 // ---- Auth Functions ----
@@ -53,6 +54,7 @@ export const firebaseSignUp = async (
     allowMessages: 'everyone',
     showOnlineStatus: true,
     showLastSeen: true,
+    hasCompletedOnboarding: false,
   };
 
   await firestore().collection('users').doc(credential.user.uid).set(profileData);
@@ -233,12 +235,19 @@ export const getFollowers = async (uid: string): Promise<UserProfile[]> => {
     .orderBy('followedAt', 'desc')
     .get();
 
+  const followerIds = snapshot.docs.map(doc => doc.id);
+  if (followerIds.length === 0) return [];
+
+  // Fetch all profiles in chunks of 30 (Firestore limit)
   const profiles: UserProfile[] = [];
-  for (const doc of snapshot.docs) {
-    try {
-      const profile = await getUserProfile(doc.id);
-      profiles.push(profile);
-    } catch {}
+  for (let i = 0; i < followerIds.length; i += 30) {
+    const chunk = followerIds.slice(i, i + 30);
+    const profilesSnapshot = await firestore()
+      .collection('users')
+      .where(firestore.FieldPath.documentId(), 'in', chunk)
+      .get();
+
+    profiles.push(...profilesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile)));
   }
   return profiles;
 };
@@ -251,14 +260,149 @@ export const getFollowing = async (uid: string): Promise<UserProfile[]> => {
     .orderBy('followedAt', 'desc')
     .get();
 
+  const followingIds = snapshot.docs.map(doc => doc.id);
+  if (followingIds.length === 0) return [];
+
   const profiles: UserProfile[] = [];
-  for (const doc of snapshot.docs) {
-    try {
-      const profile = await getUserProfile(doc.id);
-      profiles.push(profile);
-    } catch {}
+  for (let i = 0; i < followingIds.length; i += 30) {
+    const chunk = followingIds.slice(i, i + 30);
+    const profilesSnapshot = await firestore()
+      .collection('users')
+      .where(firestore.FieldPath.documentId(), 'in', chunk)
+      .get();
+
+    profiles.push(...profilesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile)));
   }
   return profiles;
+};
+
+// ---- Phone Auth Functions ----
+
+export const signInWithPhoneNumber = async (phoneNumber: string) => {
+  const confirmation = await auth().signInWithPhoneNumber(phoneNumber);
+  return confirmation;
+};
+
+export const verifyOtp = async (
+  confirmation: FirebaseAuthTypes.ConfirmationResult,
+  code: string
+): Promise<{ user: FirebaseAuthTypes.User; profile: UserProfile }> => {
+  const credential = await confirmation.confirm(code);
+  if (!credential) throw new Error('Invalid OTP code');
+
+  const user = credential.user;
+  const profileDoc = await firestore().collection('users').doc(user.uid).get();
+
+  let profile: UserProfile;
+  if (!profileDoc.exists) {
+    // Create new user profile for phone sign-in
+    const now = new Date().toISOString();
+    const profileData: Omit<UserProfile, 'id'> = {
+      email: user.email || '',
+      displayName: user.displayName || 'User',
+      username: `user_${user.uid.slice(0, 5)}_${Date.now().toString().slice(-4)}`,
+      avatar: user.photoURL || '',
+      bio: '',
+      role: 'designer',
+      skills: [],
+      interests: [],
+      software: {},
+      followersCount: 0,
+      followingCount: 0,
+      postsCount: 0,
+      isVerified: false,
+      isOnline: true,
+      createdAt: now,
+      updatedAt: now,
+      isPrivate: false,
+      allowMessages: 'everyone',
+      showOnlineStatus: true,
+      showLastSeen: true,
+      hasCompletedOnboarding: false,
+    };
+    await firestore().collection('users').doc(user.uid).set(profileData);
+    profile = { id: user.uid, ...profileData };
+  } else {
+    profile = { id: user.uid, ...profileDoc.data() } as UserProfile;
+    await firestore().collection('users').doc(user.uid).update({
+      isOnline: true,
+      updatedAt: firestore.FieldValue.serverTimestamp(),
+    });
+  }
+
+  return { user, profile };
+};
+
+// ---- Security & Account ----
+
+export const reauthenticate = async (password?: string, phoneCredential?: FirebaseAuthTypes.AuthCredential): Promise<void> => {
+  const user = auth().currentUser;
+  if (!user) throw new Error('No user logged in');
+
+  if (password) {
+    if (!user.email) throw new Error('User has no email');
+    const credential = auth.EmailAuthProvider.credential(user.email, password);
+    await user.reauthenticateWithCredential(credential);
+  } else if (phoneCredential) {
+    await user.reauthenticateWithCredential(phoneCredential);
+  } else {
+    throw new Error('No re-authentication method provided');
+  }
+};
+
+export const firebaseUpdatePassword = async (newPassword: string): Promise<void> => {
+  const user = auth().currentUser;
+  if (!user) throw new Error('No user logged in');
+  await user.updatePassword(newPassword);
+};
+
+export const deleteUserAccount = async (): Promise<void> => {
+  const user = auth().currentUser;
+  if (!user) throw new Error('No user logged in');
+
+  const uid = user.uid;
+
+  // 1. Fetch user posts to delete their images from storage
+  try {
+    const postsSnapshot = await firestore()
+      .collection('posts')
+      .where('userId', '==', uid)
+      .get();
+
+    for (const doc of postsSnapshot.docs) {
+      const data = doc.data();
+      if (data.images && Array.isArray(data.images)) {
+        for (const imageUrl of data.images) {
+          try {
+            const ref = storage().refFromURL(imageUrl);
+            await ref.delete();
+          } catch (e) {
+            console.warn('Failed to delete post image:', imageUrl, e);
+          }
+        }
+      }
+      // Delete the post document
+      await doc.ref.delete();
+    }
+  } catch (e) {
+    console.error('Error cleaning up user posts:', e);
+  }
+
+  // 2. Delete user profile and subcollections
+  // Note: Firestore doesn't delete subcollections automatically when a parent doc is deleted.
+  // In a full production app, you'd use a recursive delete or Cloud Function.
+  // Here we do a basic best-effort cleanup.
+
+  const batch = firestore().batch();
+  batch.delete(firestore().collection('users').doc(uid));
+
+  // Also remove user from others' following/followers lists if needed
+  // This is usually handled by a Cloud Function for performance.
+
+  await batch.commit();
+
+  // 3. Delete from Auth
+  await user.delete();
 };
 
 // ---- Auth State Listener ----
@@ -266,5 +410,5 @@ export const getFollowing = async (uid: string): Promise<UserProfile[]> => {
 export const onAuthStateChanged = (
   callback: (user: FirebaseAuthTypes.User | null) => void
 ) => {
-  return auth().onAuthStateChange(callback);
+  return auth().onAuthStateChanged(callback);
 };

@@ -4,24 +4,28 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Image,
-  TextInput, FlatList, Dimensions, ActivityIndicator,
+  TextInput, FlatList, Dimensions, ActivityIndicator, useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Search, TrendingUp, Filter, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { usePostStore } from '../../src/stores/postStore';
-import { useUserStore } from '../../src/stores/userStore';
-import { CATEGORIES, TRENDING_TAGS, MOCK_USERS } from '../../src/data/mockData';
-import { formatNumber, screenWidth } from '../../src/utils/helpers';
+import { usePostStore } from '../../src/context/stores/postStore';
+import { useUserStore } from '../../src/context/stores/userStore';
+import { CATEGORIES, TRENDING_TAGS } from '../../src/config/constants';
+import { formatNumber, getGridColumns, getMaxContentWidth } from '../../src/utils/helpers';
 import { Post, UserProfile } from '../../src/types';
-
-const IMAGE_SIZE = (screenWidth - 48 - 8) / 2;
 
 export default function ExploreScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const columns = getGridColumns(width);
+  const padding = 16;
+  const gap = 8;
+  const imageSize = (getMaxContentWidth(width) - (padding * 2) - (gap * (columns - 1))) / columns;
   const { colors } = useTheme();
   const { posts, loadFeed, searchPosts } = usePostStore();
+  const { searchUsers: searchUsersStore } = useUserStore();
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Post[]>([]);
@@ -31,25 +35,25 @@ export default function ExploreScreen() {
   useEffect(() => { loadFeed(); }, []);
 
   useEffect(() => {
-    if (query.length > 1) {
-      setIsSearching(true);
-      const results = searchPosts(query);
-      setSearchResults(results);
-      const users = MOCK_USERS.filter(u =>
-        u.displayName.toLowerCase().includes(query.toLowerCase()) ||
-        u.username.toLowerCase().includes(query.toLowerCase())
-      );
-      setSearchUsers(users);
-      setIsSearching(false);
-    } else {
-      setSearchResults([]);
-      setSearchUsers([]);
-    }
+    const performSearch = async () => {
+      if (query.length > 1) {
+        setIsSearching(true);
+        const results = searchPosts(query);
+        setSearchResults(results);
+        const users = await searchUsersStore(query);
+        setSearchUsers(users);
+        setIsSearching(false);
+      } else {
+        setSearchResults([]);
+        setSearchUsers([]);
+      }
+    };
+    performSearch();
   }, [query]);
 
   const displayPosts = query.length > 1 ? searchResults :
     selectedCategory === 'All' ? posts :
-    posts.filter(p => p.category === selectedCategory || p.tags.includes(selectedCategory));
+      posts.filter(p => p.category === selectedCategory || p.tags.includes(selectedCategory));
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top']}>
@@ -136,7 +140,7 @@ export default function ExploreScreen() {
           {displayPosts.map((post, i) => (
             <TouchableOpacity
               key={post.id}
-              style={[styles.gridItem, { backgroundColor: colors.surface }]}
+              style={[styles.gridItem, { backgroundColor: colors.surface, width: imageSize, height: imageSize }]}
               onPress={() => router.push(`/post/${post.id}`)}
               activeOpacity={0.9}
             >
@@ -187,7 +191,7 @@ const styles = StyleSheet.create({
   catChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   catText: { fontSize: 12, fontWeight: '600' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 8 },
-  gridItem: { width: IMAGE_SIZE, height: IMAGE_SIZE, borderRadius: 14, overflow: 'hidden' },
+  gridItem: { borderRadius: 12, marginBottom: 8, overflow: 'hidden' },
   gridImage: { width: '100%', height: '100%' },
   gridOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 8, backgroundColor: 'rgba(0,0,0,0.3)' },
   gridLikes: { color: '#fff', fontSize: 12, fontWeight: '700' },

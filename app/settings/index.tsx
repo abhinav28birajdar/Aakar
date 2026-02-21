@@ -8,11 +8,13 @@ import {
 import { useRouter } from 'expo-router';
 import {
   ArrowLeft, ChevronRight, Shield, Lock, Palette, HelpCircle,
-  LogOut, User, Bell, Eye, Info, FileText,
+  LogOut, User, Bell, Eye, Info, FileText, Database,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useAuthStore } from '../../src/stores/authStore';
+import { useAuthStore } from '../../src/context/stores/authStore';
+import { ResponsiveContainer } from '../../src/components/atoms';
+
 
 const SECTIONS = [
   {
@@ -28,6 +30,7 @@ const SECTIONS = [
     items: [
       { label: 'Appearance', icon: Palette, route: '/settings/theme' },
       { label: 'Notifications', icon: Bell, route: '/settings/privacy' },
+      { label: 'Data & Storage', icon: Database, route: '/settings/data-storage' },
     ],
   },
   {
@@ -60,46 +63,48 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <ArrowLeft size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <ResponsiveContainer>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <ArrowLeft size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
+          <View style={{ width: 24 }} />
+        </View>
 
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        {SECTIONS.map(section => (
-          <View key={section.title} style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>{section.title}</Text>
-            <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              {section.items.map((item, i) => {
-                const Icon = item.icon;
-                return (
-                  <TouchableOpacity
-                    key={item.label}
-                    style={[styles.row, i < section.items.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: colors.border }]}
-                    onPress={() => router.push(item.route as any)}
-                  >
-                    <Icon size={20} color={colors.primary} />
-                    <Text style={[styles.rowLabel, { color: colors.text }]}>{item.label}</Text>
-                    <ChevronRight size={18} color={colors.textMuted} />
-                  </TouchableOpacity>
-                );
-              })}
+        <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+          {SECTIONS.map(section => (
+            <View key={section.title} style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>{section.title}</Text>
+              <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                {section.items.map((item, i) => {
+                  const Icon = item.icon;
+                  return (
+                    <TouchableOpacity
+                      key={item.label}
+                      style={[styles.row, i < section.items.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: colors.border }]}
+                      onPress={() => router.push(item.route as any)}
+                    >
+                      <Icon size={20} color={colors.primary} />
+                      <Text style={[styles.rowLabel, { color: colors.text }]}>{item.label}</Text>
+                      <ChevronRight size={18} color={colors.textMuted} />
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
-          </View>
-        ))}
+          ))}
 
-        {/* Logout */}
-        <TouchableOpacity style={[styles.logoutBtn, { borderColor: colors.error }]} onPress={handleLogout}>
-          <LogOut size={20} color={colors.error} />
-          <Text style={[styles.logoutText, { color: colors.error }]}>Log Out</Text>
-        </TouchableOpacity>
+          {/* Logout */}
+          <TouchableOpacity style={[styles.logoutBtn, { borderColor: colors.error }]} onPress={handleLogout}>
+            <LogOut size={20} color={colors.error} />
+            <Text style={[styles.logoutText, { color: colors.error }]}>Log Out</Text>
+          </TouchableOpacity>
 
-        <Text style={[styles.version, { color: colors.textMuted }]}>Aakar v1.0.0</Text>
-        <View style={{ height: 40 }} />
-      </ScrollView>
+          <Text style={[styles.version, { color: colors.textMuted }]}>Aakar v1.0.0</Text>
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </ResponsiveContainer>
     </SafeAreaView>
   );
 }

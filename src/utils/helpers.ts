@@ -117,7 +117,7 @@ export const hapticFeedback = async (type: 'light' | 'medium' | 'heavy' | 'succe
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         break;
     }
-  } catch {}
+  } catch { }
 };
 
 // Color helpers
@@ -126,4 +126,15 @@ export const hexToRgba = (hex: string, alpha: number = 1): string => {
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+// Responsive Helpers
+export const getGridColumns = (width: number): number => {
+  if (width >= 1200) return 4;
+  if (width >= 768) return 3;
+  return 2;
+};
+
+export const getMaxContentWidth = (width: number): number => {
+  return Math.min(width, 1200);
 };

@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Image,
-  TextInput, FlatList, Dimensions, KeyboardAvoidingView, Platform,
+  TextInput, FlatList, Dimensions, KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -13,23 +13,45 @@ import {
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { usePostStore } from '../../src/stores/postStore';
-import { formatNumber, timeAgo, screenWidth } from '../../src/utils/helpers';
+import { usePostStore } from '../../src/context/stores/postStore';
+import { useAuthStore } from '../../src/context/stores/authStore';
+import { useUserStore } from '../../src/context/stores/userStore';
+import { formatNumber, timeAgo, getMaxContentWidth } from '../../src/utils/helpers';
 import { Comment } from '../../src/types';
+import { ResponsiveContainer } from '../../src/components/atoms';
 
 export default function PostDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
-  const { getPostById, likePost, unlikePost, savePost, unsavePost, comments, loadComments, addComment, likeComment } = usePostStore();
+  const {
+    getPostById, fetchPost, likePost, unlikePost,
+    savePost, unsavePost, comments, loadComments,
+    addComment, likeComment
+  } = usePostStore();
+  const { likedPosts, savedPosts } = useUserStore();
 
   const post = getPostById(id);
+  const isPostLiked = likedPosts.has(id);
+  const isPostSaved = savedPosts.has(id);
+
   const postComments = comments[id] || [];
   const [newComment, setNewComment] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
-    if (id) loadComments(id);
+    const init = async () => {
+      if (id) {
+        setIsFetching(true);
+        await Promise.all([
+          loadComments(id),
+          !post ? fetchPost(id) : Promise.resolve()
+        ]);
+        setIsFetching(false);
+      }
+    };
+    init();
   }, [id]);
 
   if (!post) {
@@ -46,12 +68,12 @@ export default function PostDetailScreen() {
   }
 
   const handleLike = () => {
-    if (post.isLiked) unlikePost(post.id);
+    if (isPostLiked) unlikePost(post.id);
     else likePost(post.id);
   };
 
   const handleSave = () => {
-    if (post.isSaved) unsavePost(post.id);
+    if (isPostSaved) unsavePost(post.id);
     else savePost(post.id);
   };
 
@@ -59,6 +81,50 @@ export default function PostDetailScreen() {
     if (!newComment.trim()) return;
     addComment(post.id, newComment.trim());
     setNewComment('');
+  };
+
+  const handleMoreOptions = () => {
+    const isOwner = post.userId === useAuthStore.getState().user?.id;
+
+    const options: any[] = [
+      {
+        text: 'Report',
+        onPress: () => router.push({ pathname: '/report', params: { targetId: post.id, targetType: 'post' } }),
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ];
+
+    if (isOwner) {
+      options.unshift(
+        {
+          text: 'Edit Post',
+          onPress: () => router.push(`/post/edit/${post.id}`),
+        },
+        {
+          text: 'Delete Post',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Delete Post',
+              'Are you sure you want to delete this post? This action cannot be undone.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete',
+                  style: 'destructive',
+                  onPress: async () => {
+                    usePostStore.getState().deletePost(post.id);
+                    router.back();
+                  },
+                },
+              ]
+            );
+          },
+        }
+      );
+    }
+
+    Alert.alert('Options', '', options);
   };
 
   return (
@@ -69,7 +135,7 @@ export default function PostDetailScreen() {
             <ArrowLeft size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Post</Text>
-          <TouchableOpacity onPress={() => router.push({ pathname: '/report', params: { targetId: post.id, targetType: 'post' } })}>
+          <TouchableOpacity onPress={handleMoreOptions}>
             <MoreHorizontal size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
@@ -94,127 +160,130 @@ export default function PostDetailScreen() {
             </View>
           </TouchableOpacity>
 
-          {/* Image Carousel */}
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={e => setCurrentImageIndex(Math.round(e.nativeEvent.contentOffset.x / screenWidth))}
-          >
-            {post.images.map((img, i) => (
-              <TouchableOpacity
-                key={i}
-                activeOpacity={0.95}
-                onPress={() => router.push({ pathname: '/modal/image-preview', params: { imageUrl: img } })}
-              >
-                <Image source={{ uri: img }} style={styles.postImage} resizeMode="cover" />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          {post.images.length > 1 && (
-            <View style={styles.dotsRow}>
-              {post.images.map((_, i) => (
-                <View key={i} style={[styles.dot, i === currentImageIndex && { backgroundColor: colors.primary, width: 20 }]} />
+          <ResponsiveContainer>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={e => setCurrentImageIndex(Math.round(e.nativeEvent.contentOffset.x / getMaxContentWidth(Dimensions.get('window').width)))}
+            >
+              {post.images.map((img, i) => (
+                <TouchableOpacity
+                  key={i}
+                  activeOpacity={0.95}
+                  onPress={() => router.push({ pathname: '/modal/image-preview', params: { imageUrl: img } })}
+                >
+                  <Image source={{ uri: img }} style={styles.postImage} resizeMode="cover" />
+                </TouchableOpacity>
               ))}
-            </View>
-          )}
-
-          {/* Actions */}
-          <View style={styles.actionsRow}>
-            <TouchableOpacity style={styles.actionBtn} onPress={handleLike}>
-              <Heart size={24} color={post.isLiked ? '#FF6B6B' : colors.text} fill={post.isLiked ? '#FF6B6B' : 'none'} />
-              <Text style={[styles.actionText, { color: post.isLiked ? '#FF6B6B' : colors.text }]}>{formatNumber(post.likesCount)}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtn}>
-              <MessageCircle size={24} color={colors.text} />
-              <Text style={[styles.actionText, { color: colors.text }]}>{formatNumber(post.commentsCount)}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtn} onPress={handleSave}>
-              <Bookmark size={24} color={post.isSaved ? colors.primary : colors.text} fill={post.isSaved ? colors.primary : 'none'} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtn}>
-              <Share2 size={22} color={colors.text} />
-            </TouchableOpacity>
-            <View style={{ flex: 1 }} />
-            <View style={styles.actionBtn}>
-              <Eye size={20} color={colors.textMuted} />
-              <Text style={[styles.actionText, { color: colors.textMuted }]}>{formatNumber(post.viewsCount)}</Text>
-            </View>
-          </View>
-
-          {/* Content */}
-          <View style={styles.contentSection}>
-            <Text style={[styles.postTitle, { color: colors.text }]}>{post.title}</Text>
-            {post.description ? (
-              <Text style={[styles.postDesc, { color: colors.textSecondary }]}>{post.description}</Text>
-            ) : null}
-
-            {/* Tags */}
-            {post.tags.length > 0 && (
-              <View style={styles.tagRow}>
-                {post.tags.map(tag => (
-                  <TouchableOpacity key={tag} style={[styles.tagChip, { backgroundColor: colors.primary + '15' }]}
-                    onPress={() => router.push(`/category/${tag}`)}
-                  >
-                    <Text style={[styles.tagText, { color: colors.primary }]}>#{tag}</Text>
-                  </TouchableOpacity>
+            </ScrollView>
+            {post.images.length > 1 && (
+              <View style={styles.dotsRow}>
+                {post.images.map((_, i) => (
+                  <View key={i} style={[styles.dot, i === currentImageIndex && { backgroundColor: colors.primary, width: 20 }]} />
                 ))}
               </View>
             )}
 
-            {/* Details */}
-            <View style={[styles.metaCard, { backgroundColor: colors.surface }]}>
-              <View style={styles.metaItem}>
-                <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Category</Text>
-                <Text style={[styles.metaValue, { color: colors.text }]}>{post.category}</Text>
+            {/* Actions */}
+            <View style={styles.actionsRow}>
+              <TouchableOpacity style={styles.actionBtn} onPress={handleLike}>
+                <Heart size={24} color={isPostLiked ? '#FF6B6B' : colors.text} fill={isPostLiked ? '#FF6B6B' : 'none'} />
+                <Text style={[styles.actionText, { color: isPostLiked ? '#FF6B6B' : colors.text }]}>{formatNumber(post.likesCount)}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionBtn}>
+                <MessageCircle size={24} color={colors.text} />
+                <Text style={[styles.actionText, { color: colors.text }]}>{formatNumber(post.commentsCount)}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionBtn} onPress={handleSave}>
+                <Bookmark size={24} color={isPostSaved ? colors.primary : colors.text} fill={isPostSaved ? colors.primary : 'none'} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionBtn}>
+                <Share2 size={22} color={colors.text} />
+              </TouchableOpacity>
+              <View style={{ flex: 1 }} />
+              <View style={styles.actionBtn}>
+                <Eye size={20} color={colors.textMuted} />
+                <Text style={[styles.actionText, { color: colors.textMuted }]}>{formatNumber(post.viewsCount)}</Text>
               </View>
-              {post.software.length > 0 && (
-                <View style={styles.metaItem}>
-                  <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Software</Text>
-                  <Text style={[styles.metaValue, { color: colors.text }]}>{post.software.join(', ')}</Text>
+            </View>
+
+            {/* Content */}
+            <View style={styles.contentSection}>
+              <Text style={[styles.postTitle, { color: colors.text }]}>{post.title}</Text>
+              {post.description ? (
+                <Text style={[styles.postDesc, { color: colors.textSecondary }]}>{post.description}</Text>
+              ) : null}
+
+              {/* Tags */}
+              {post.tags.length > 0 && (
+                <View style={styles.tagRow}>
+                  {post.tags.map(tag => (
+                    <TouchableOpacity key={tag} style={[styles.tagChip, { backgroundColor: colors.primary + '15' }]}
+                      onPress={() => router.push(`/category/${tag}`)}
+                    >
+                      <Text style={[styles.tagText, { color: colors.primary }]}>#{tag}</Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
               )}
-            </View>
-          </View>
 
-          {/* Comments */}
-          <View style={styles.commentsSection}>
-            <Text style={[styles.commentHeader, { color: colors.text }]}>Comments ({postComments.length})</Text>
-            {postComments.map(comment => (
-              <View key={comment.id} style={[styles.commentRow, { borderBottomColor: colors.border }]}>
-                <Image source={{ uri: comment.user.avatar }} style={styles.commentAvatar} />
-                <View style={{ flex: 1 }}>
-                  <View style={styles.commentTop}>
-                    <Text style={[styles.commentName, { color: colors.text }]}>{comment.user.displayName}</Text>
-                    <Text style={[styles.commentTime, { color: colors.textMuted }]}>{timeAgo(comment.createdAt)}</Text>
-                  </View>
-                  <Text style={[styles.commentText, { color: colors.textSecondary }]}>{comment.text}</Text>
-                  <TouchableOpacity style={styles.commentLike} onPress={() => likeComment(comment.id)}>
-                    <Heart size={14} color={comment.isLiked ? '#FF6B6B' : colors.textMuted} fill={comment.isLiked ? '#FF6B6B' : 'none'} />
-                    <Text style={[styles.commentLikeCount, { color: colors.textMuted }]}>{comment.likesCount}</Text>
-                  </TouchableOpacity>
+              {/* Details */}
+              <View style={[styles.metaCard, { backgroundColor: colors.surface }]}>
+                <View style={styles.metaItem}>
+                  <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Category</Text>
+                  <Text style={[styles.metaValue, { color: colors.text }]}>{post.category}</Text>
                 </View>
+                {post.software.length > 0 && (
+                  <View style={styles.metaItem}>
+                    <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Software</Text>
+                    <Text style={[styles.metaValue, { color: colors.text }]}>{post.software.join(', ')}</Text>
+                  </View>
+                )}
               </View>
-            ))}
-          </View>
+            </View>
 
-          <View style={{ height: 80 }} />
+            {/* Comments */}
+            <View style={styles.commentsSection}>
+              <Text style={[styles.commentHeader, { color: colors.text }]}>Comments ({postComments.length})</Text>
+              {postComments.map(comment => (
+                <View key={comment.id} style={[styles.commentRow, { borderBottomColor: colors.border }]}>
+                  <Image source={{ uri: comment.user.avatar }} style={styles.commentAvatar} />
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.commentTop}>
+                      <Text style={[styles.commentName, { color: colors.text }]}>{comment.user.displayName}</Text>
+                      <Text style={[styles.commentTime, { color: colors.textMuted }]}>{timeAgo(comment.createdAt)}</Text>
+                    </View>
+                    <Text style={[styles.commentText, { color: colors.textSecondary }]}>{comment.text}</Text>
+                    <TouchableOpacity style={styles.commentLike} onPress={() => likeComment(comment.id)}>
+                      <Heart size={14} color={comment.isLiked ? '#FF6B6B' : colors.textMuted} fill={comment.isLiked ? '#FF6B6B' : 'none'} />
+                      <Text style={[styles.commentLikeCount, { color: colors.textMuted }]}>{comment.likesCount}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            <View style={{ height: 80 }} />
+          </ResponsiveContainer>
         </ScrollView>
 
         {/* Comment Input */}
-        <View style={[styles.commentInputRow, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-          <TextInput
-            style={[styles.commentInput, { color: colors.text, backgroundColor: colors.surface }]}
-            placeholder="Add a comment..."
-            placeholderTextColor={colors.textMuted}
-            value={newComment}
-            onChangeText={setNewComment}
-            multiline
-          />
-          <TouchableOpacity onPress={handleSendComment} disabled={!newComment.trim()}>
-            <Send size={22} color={newComment.trim() ? colors.primary : colors.textMuted} />
-          </TouchableOpacity>
-        </View>
+        <ResponsiveContainer maxWidth={800}>
+          <View style={[styles.commentInputRow, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+            <TextInput
+              style={[styles.commentInput, { color: colors.text, backgroundColor: colors.surface }]}
+              placeholder="Add a comment..."
+              placeholderTextColor={colors.textMuted}
+              value={newComment}
+              onChangeText={setNewComment}
+              multiline
+            />
+            <TouchableOpacity onPress={handleSendComment} disabled={!newComment.trim()}>
+              <Send size={22} color={newComment.trim() ? colors.primary : colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+        </ResponsiveContainer>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -233,7 +302,7 @@ const styles = StyleSheet.create({
   userName: { fontSize: 16, fontWeight: '700' },
   verifiedBadge: { width: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
   userTime: { fontSize: 12, marginTop: 2 },
-  postImage: { width: screenWidth, height: screenWidth, backgroundColor: '#f0f0f0' },
+  postImage: { width: '100%', aspectRatio: 1, backgroundColor: '#f0f0f0' },
   dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 4, paddingVertical: 10 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#ccc' },
   actionsRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, gap: 20 },

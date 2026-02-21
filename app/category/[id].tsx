@@ -9,7 +9,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Heart } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { MOCK_POSTS } from '../../src/data/mockData';
+import { usePostStore } from '../../src/context/stores/postStore';
 import { formatNumber, screenWidth } from '../../src/utils/helpers';
 
 const GRID_SIZE = (screenWidth - 48 - 8) / 2;
@@ -18,12 +18,13 @@ export default function CategoryScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
+  const { posts } = usePostStore();
 
   const categoryPosts = useMemo(() =>
-    MOCK_POSTS.filter(p =>
+    posts.filter(p =>
       p.category === id ||
       p.tags.some(t => t.toLowerCase() === id?.toLowerCase())
-    ), [id]);
+    ), [id, posts]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top']}>

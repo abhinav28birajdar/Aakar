@@ -9,6 +9,8 @@ import { Post, Comment, PostCategory, PostUser, Collection } from '../types';
 // POST FUNCTIONS
 // ============================
 
+import { uploadPostImage } from './storageService';
+
 export const createPost = async (
   userId: string,
   postData: {
@@ -22,46 +24,51 @@ export const createPost = async (
   },
   userInfo: PostUser
 ): Promise<string> => {
-  // Upload images to Firebase Storage
-  const imageUrls: string[] = [];
-  for (let i = 0; i < postData.images.length; i++) {
-    const uri = postData.images[i];
-    if (uri.startsWith('http')) {
-      imageUrls.push(uri);
-      continue;
+  try {
+    // 1. Upload images to Firebase Storage using centralized service
+    const imageUrls: string[] = [];
+    for (let i = 0; i < postData.images.length; i++) {
+      const uri = postData.images[i];
+      if (uri.startsWith('http')) {
+        imageUrls.push(uri);
+        continue;
+      }
+      // Use modular storage service
+      const url = await uploadPostImage(userId, uri, i);
+      imageUrls.push(url);
     }
-    const ref = storage().ref(`posts/${userId}/${Date.now()}_${i}.jpg`);
-    await ref.putFile(uri);
-    const url = await ref.getDownloadURL();
-    imageUrls.push(url);
+
+    const now = firestore.FieldValue.serverTimestamp();
+    const docRef = await firestore().collection('posts').add({
+      userId,
+      user: userInfo,
+      title: postData.title,
+      description: postData.description,
+      images: imageUrls,
+      tags: postData.tags,
+      category: postData.category,
+      software: postData.software,
+      visibility: postData.visibility,
+      likesCount: 0,
+      commentsCount: 0,
+      savesCount: 0,
+      sharesCount: 0,
+      viewsCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // 2. Increment user post count atomically
+    await firestore().collection('users').doc(userId).update({
+      postsCount: firestore.FieldValue.increment(1),
+      updatedAt: now,
+    });
+
+    return docRef.id;
+  } catch (error: any) {
+    console.error('Create Post Error:', error);
+    throw new Error(error.message || 'Failed to create post');
   }
-
-  const now = firestore.FieldValue.serverTimestamp();
-  const docRef = await firestore().collection('posts').add({
-    userId,
-    user: userInfo,
-    title: postData.title,
-    description: postData.description,
-    images: imageUrls,
-    tags: postData.tags,
-    category: postData.category,
-    software: postData.software,
-    visibility: postData.visibility,
-    likesCount: 0,
-    commentsCount: 0,
-    savesCount: 0,
-    sharesCount: 0,
-    viewsCount: 0,
-    createdAt: now,
-    updatedAt: now,
-  });
-
-  // Increment user post count
-  await firestore().collection('users').doc(userId).update({
-    postsCount: firestore.FieldValue.increment(1),
-  });
-
-  return docRef.id;
 };
 
 export const getPost = async (postId: string, currentUserId?: string): Promise<Post | null> => {
@@ -142,25 +149,35 @@ export const getFeedPosts = async (
   }
 
   const snapshot = await query.get();
-  const posts: Post[] = [];
+  const postIds = snapshot.docs.map(doc => doc.id);
+  let likedPostIds = new Set<string>();
+  let savedPostIds = new Set<string>();
 
-  for (const doc of snapshot.docs) {
-    const data = doc.data();
-    // Check like/save status
-    const [likeDoc, saveDoc] = await Promise.all([
-      firestore().collection('posts').doc(doc.id).collection('likes').doc(currentUserId).get(),
-      firestore().collection('users').doc(currentUserId).collection('savedPosts').doc(doc.id).get(),
+  if (currentUserId && postIds.length > 0) {
+    // Fetch likes and saves for these specific posts in one go
+    const [likesSnap, savesSnap] = await Promise.all([
+      firestore().collection('users').doc(currentUserId).collection('likes')
+        .where(firestore.FieldPath.documentId(), 'in', postIds)
+        .get(),
+      firestore().collection('users').doc(currentUserId).collection('savedPosts')
+        .where(firestore.FieldPath.documentId(), 'in', postIds)
+        .get()
     ]);
+    likedPostIds = new Set(likesSnap.docs.map(d => d.id));
+    savedPostIds = new Set(savesSnap.docs.map(d => d.id));
+  }
 
-    posts.push({
+  const posts: Post[] = snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
       id: doc.id,
       ...data,
-      isLiked: likeDoc.exists,
-      isSaved: saveDoc.exists,
+      isLiked: likedPostIds.has(doc.id),
+      isSaved: savedPostIds.has(doc.id),
       createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
       updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-    } as Post);
-  }
+    } as Post;
+  });
 
   return {
     posts,
@@ -175,28 +192,34 @@ export const getUserPosts = async (userId: string, currentUserId?: string): Prom
     .orderBy('createdAt', 'desc')
     .get();
 
-  const posts: Post[] = [];
-  for (const doc of snapshot.docs) {
+  const postIds = snapshot.docs.map(doc => doc.id);
+  let likedPostIds = new Set<string>();
+  let savedPostIds = new Set<string>();
+
+  if (currentUserId && postIds.length > 0) {
+    const [likesSnap, savesSnap] = await Promise.all([
+      firestore().collection('users').doc(currentUserId).collection('likes')
+        .where(firestore.FieldPath.documentId(), 'in', postIds)
+        .get(),
+      firestore().collection('users').doc(currentUserId).collection('savedPosts')
+        .where(firestore.FieldPath.documentId(), 'in', postIds)
+        .get()
+    ]);
+    likedPostIds = new Set(likesSnap.docs.map(d => d.id));
+    savedPostIds = new Set(savesSnap.docs.map(d => d.id));
+  }
+
+  const posts: Post[] = snapshot.docs.map(doc => {
     const data = doc.data();
-    let isLiked = false;
-    let isSaved = false;
-    if (currentUserId) {
-      const [likeDoc, saveDoc] = await Promise.all([
-        firestore().collection('posts').doc(doc.id).collection('likes').doc(currentUserId).get(),
-        firestore().collection('users').doc(currentUserId).collection('savedPosts').doc(doc.id).get(),
-      ]);
-      isLiked = likeDoc.exists;
-      isSaved = saveDoc.exists;
-    }
-    posts.push({
+    return {
       id: doc.id,
       ...data,
-      isLiked,
-      isSaved,
+      isLiked: likedPostIds.has(doc.id),
+      isSaved: savedPostIds.has(doc.id),
       createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
       updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-    } as Post);
-  }
+    } as Post;
+  });
   return posts;
 };
 
@@ -208,7 +231,7 @@ export const deletePost = async (postId: string, userId: string): Promise<void> 
       try {
         const ref = storage().refFromURL(url);
         await ref.delete();
-      } catch {}
+      } catch { }
     }
   }
 
@@ -218,10 +241,26 @@ export const deletePost = async (postId: string, userId: string): Promise<void> 
   });
 };
 
+export const updatePost = async (
+  postId: string,
+  userId: string,
+  data: Partial<Post>
+): Promise<void> => {
+  await firestore().collection('posts').doc(postId).update({
+    ...data,
+    updatedAt: firestore.FieldValue.serverTimestamp(),
+  });
+};
+
 export const likePost = async (postId: string, userId: string): Promise<void> => {
   const batch = firestore().batch();
   batch.set(
     firestore().collection('posts').doc(postId).collection('likes').doc(userId),
+    { likedAt: firestore.FieldValue.serverTimestamp() }
+  );
+  // Mirror for efficient global check
+  batch.set(
+    firestore().collection('users').doc(userId).collection('likes').doc(postId),
     { likedAt: firestore.FieldValue.serverTimestamp() }
   );
   batch.update(firestore().collection('posts').doc(postId), {
@@ -234,6 +273,10 @@ export const unlikePost = async (postId: string, userId: string): Promise<void> 
   const batch = firestore().batch();
   batch.delete(
     firestore().collection('posts').doc(postId).collection('likes').doc(userId)
+  );
+  // Remove mirror
+  batch.delete(
+    firestore().collection('users').doc(userId).collection('likes').doc(postId)
   );
   batch.update(firestore().collection('posts').doc(postId), {
     likesCount: firestore.FieldValue.increment(-1),
@@ -392,6 +435,22 @@ export const likeComment = async (
   }
 };
 
+export const deleteComment = async (
+  postId: string,
+  commentId: string
+): Promise<void> => {
+  await firestore()
+    .collection('posts')
+    .doc(postId)
+    .collection('comments')
+    .doc(commentId)
+    .delete();
+
+  await firestore().collection('posts').doc(postId).update({
+    commentsCount: firestore.FieldValue.increment(-1),
+  });
+};
+
 // ============================
 // UPLOAD HELPER
 // ============================
@@ -411,4 +470,55 @@ export const uploadAvatar = async (uid: string, uri: string): Promise<string> =>
 
 export const uploadCoverPhoto = async (uid: string, uri: string): Promise<string> => {
   return uploadImage(uri, `covers/${uid}/cover_${Date.now()}.jpg`);
+};
+// ============================
+// REAL-TIME LISTENERS
+// ============================
+
+export const subscribeToFeedPosts = (
+  feedType: 'forYou' | 'following' | 'trending' | 'fresh',
+  currentUserId: string,
+  category: string,
+  callback: (posts: Post[]) => void
+): (() => void) => {
+  let query: FirebaseFirestoreTypes.Query = firestore()
+    .collection('posts')
+    .where('visibility', '==', 'public');
+
+  if (category && category !== 'All') {
+    query = query.where('category', '==', category);
+  }
+
+  switch (feedType) {
+    case 'trending':
+      query = query.orderBy('likesCount', 'desc');
+      break;
+    case 'fresh':
+      query = query.orderBy('createdAt', 'desc');
+      break;
+    default:
+      query = query.orderBy('createdAt', 'desc');
+      break;
+  }
+
+  // Note: For 'following' feed, we'd need a multi-query or a different approach for real-time
+  // because the following list itself might change. For now, we handle the basic ones.
+
+  return query.limit(50).onSnapshot(async (snapshot) => {
+    const posts: Post[] = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        isLiked: false, // Computed by store
+        isSaved: false, // Computed by store
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      } as Post;
+    });
+
+    callback(posts);
+  }, (error) => {
+    console.error('Error in post subscription:', error);
+  });
 };

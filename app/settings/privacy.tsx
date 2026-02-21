@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useAuthStore } from '../../src/stores/authStore';
+import { useAuthStore } from '../../src/context/stores/authStore';
 
 export default function PrivacyScreen() {
   const router = useRouter();

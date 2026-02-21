@@ -41,7 +41,7 @@ yarn-error.*
 /android
 
 # Firebase & Sensitive
-google-services.json
+
 GoogleService-Info.plist
 .env
 .env.*

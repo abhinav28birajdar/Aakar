@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Camera, ArrowRight, MapPin, Globe } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useAuthStore } from '../../src/stores/authStore';
+import { useAuthStore } from '../../src/context/stores/authStore';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ProfileSetupScreen() {

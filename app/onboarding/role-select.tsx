@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Palette, BookOpen, Search, GraduationCap, ArrowRight } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useAuthStore } from '../../src/stores/authStore';
+import { useAuthStore } from '../../src/context/stores/authStore';
 import { UserRole } from '../../src/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 

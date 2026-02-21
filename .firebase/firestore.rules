@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---- Helper Functions ----
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // ---- Users Collection ----
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+
+      // Followers subcollection
+      match /followers/{followerId} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated();
+      }
+
+      // Following subcollection
+      match /following/{followingId} {
+        allow read: if isAuthenticated();
+        allow write: if isOwner(userId);
+      }
+
+      // Saved posts subcollection
+      match /savedPosts/{postId} {
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId);
+      }
+    }
+
+    // ---- Posts Collection ----
+    match /posts/{postId} {
+      allow read: if isAuthenticated() || 
+                     (resource != null && resource.data.visibility == 'public');
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+                       isOwner(resource.data.userId);
+      allow delete: if isAuthenticated() && 
+                       isOwner(resource.data.userId);
+
+      // Likes subcollection
+      match /likes/{userId} {
+        allow read: if isAuthenticated();
+        // Only owner of the like can write (like/unlike)
+        allow write: if isOwner(userId); 
+      }
+
+      // Comments subcollection
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update: if isAuthenticated() && 
+                         isOwner(resource.data.userId);
+        allow delete: if isAuthenticated() && 
+                         (isOwner(resource.data.userId) || 
+                          isOwner(get(/databases/$(database)/documents/posts/$(postId)).data.userId));
+
+        // Comment likes
+        match /likes/{userId} {
+          allow read: if isAuthenticated();
+          allow write: if isOwner(userId);
+        }
+      }
+    }
+
+    // ---- Chat Rooms Collection ----
+    match /chatRooms/{chatId} {
+      allow read: if isAuthenticated() && 
+                     request.auth.uid in resource.data.participantIds;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+                       request.auth.uid in resource.data.participantIds;
+
+      // Messages subcollection
+      match /messages/{messageId} {
+        // Only participants can read/write messages
+        allow read: if isAuthenticated() && 
+                       request.auth.uid in get(/databases/$(database)/documents/chatRooms/$(chatId)).data.participantIds;
+        allow create: if isAuthenticated() && 
+                        request.auth.uid == request.resource.data.senderId &&
+                        request.auth.uid in get(/databases/$(database)/documents/chatRooms/$(chatId)).data.participantIds;
+        allow update: if isAuthenticated() && 
+                        isOwner(resource.data.senderId);
+      }
+
+      // Unread counts subcollection
+      match /unreadCounts/{userId} {
+        allow read: if isOwner(userId);
+        allow write: if isAuthenticated();
+      }
+    }
+
+    // ---- Notifications Collection ----
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && 
+                     isOwner(resource.data.userId);
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+                       isOwner(resource.data.userId);
+      allow delete: if isAuthenticated() && 
+                       isOwner(resource.data.userId);
+    }
+  }
+}

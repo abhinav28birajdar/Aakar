@@ -3,16 +3,17 @@
 // ============================================================
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView,
-  KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Modal,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView,
+  KeyboardAvoidingView, Platform, Alert, Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { User, Mail, Lock, Eye, EyeOff, AtSign, CheckCircle, X } from 'lucide-react-native';
+import { User, Mail, Lock, AtSign, CheckCircle, X } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useAuthStore } from '../../src/stores/authStore';
+import { useAuthStore } from '../../src/context/stores/authStore';
 import { isValidEmail, getPasswordStrength } from '../../src/utils/helpers';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Input, Button } from '../../src/components/atoms';
 import { SocialAuthButtons } from '../../src/components/auth/SocialAuthButtons';
 
 export default function SignUpScreen() {
@@ -24,8 +25,7 @@ export default function SignUpScreen() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [showEmailPopup, setShowEmailPopup] = useState(false);
 
   const passwordStrength = getPasswordStrength(password);
@@ -103,58 +103,57 @@ export default function SignUpScreen() {
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Join the designer community</Text>
           </View>
 
-          {/* Name */}
-          <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.text }]}>Full Name</Text>
-            <View style={[styles.inputBox, { backgroundColor: colors.surface, borderColor: errors.name ? colors.error : colors.border }]}>
-              <User size={20} color={colors.textMuted} />
-              <TextInput style={[styles.input, { color: colors.text }]} value={name} onChangeText={t => { setName(t); setErrors(e => ({ ...e, name: '' })); }} placeholder="John Doe" placeholderTextColor={colors.textMuted} />
-            </View>
-            {errors.name ? <Text style={[styles.err, { color: colors.error }]}>{errors.name}</Text> : null}
-          </View>
+          {/* Form */}
+          <Input
+            label="Full Name"
+            value={name}
+            onChangeText={t => { setName(t); setErrors(e => ({ ...e, name: undefined })); }}
+            placeholder="John Doe"
+            leftIcon={<User size={20} color={colors.textMuted} />}
+            error={errors.name}
+          />
 
-          {/* Username */}
-          <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.text }]}>Username</Text>
-            <View style={[styles.inputBox, { backgroundColor: colors.surface, borderColor: errors.username ? colors.error : colors.border }]}>
-              <AtSign size={20} color={colors.textMuted} />
-              <TextInput style={[styles.input, { color: colors.text }]} value={username} onChangeText={t => { setUsername(t.toLowerCase()); setErrors(e => ({ ...e, username: '' })); }} placeholder="johndoe" placeholderTextColor={colors.textMuted} autoCapitalize="none" />
-            </View>
-            {errors.username ? <Text style={[styles.err, { color: colors.error }]}>{errors.username}</Text> : null}
-          </View>
+          <Input
+            label="Username"
+            value={username}
+            onChangeText={t => { setUsername(t.toLowerCase()); setErrors(e => ({ ...e, username: undefined })); }}
+            placeholder="johndoe"
+            autoCapitalize="none"
+            leftIcon={<AtSign size={20} color={colors.textMuted} />}
+            error={errors.username}
+          />
 
-          {/* Email */}
-          <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.text }]}>Email</Text>
-            <View style={[styles.inputBox, { backgroundColor: colors.surface, borderColor: errors.email ? colors.error : colors.border }]}>
-              <Mail size={20} color={colors.textMuted} />
-              <TextInput style={[styles.input, { color: colors.text }]} value={email} onChangeText={t => { setEmail(t); setErrors(e => ({ ...e, email: '' })); }} placeholder="your@email.com" placeholderTextColor={colors.textMuted} keyboardType="email-address" autoCapitalize="none" />
-            </View>
-            {errors.email ? <Text style={[styles.err, { color: colors.error }]}>{errors.email}</Text> : null}
-          </View>
+          <Input
+            label="Email"
+            value={email}
+            onChangeText={t => { setEmail(t); setErrors(e => ({ ...e, email: undefined })); }}
+            placeholder="your@email.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            leftIcon={<Mail size={20} color={colors.textMuted} />}
+            error={errors.email}
+          />
 
-          {/* Password */}
-          <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.text }]}>Password</Text>
-            <View style={[styles.inputBox, { backgroundColor: colors.surface, borderColor: errors.password ? colors.error : colors.border }]}>
-              <Lock size={20} color={colors.textMuted} />
-              <TextInput style={[styles.input, { color: colors.text }]} value={password} onChangeText={t => { setPassword(t); setErrors(e => ({ ...e, password: '' })); }} placeholder="Min 8 characters" placeholderTextColor={colors.textMuted} secureTextEntry={!showPassword} />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                {showPassword ? <EyeOff size={20} color={colors.textMuted} /> : <Eye size={20} color={colors.textMuted} />}
-              </TouchableOpacity>
-            </View>
-            {errors.password ? <Text style={[styles.err, { color: colors.error }]}>{errors.password}</Text> : null}
-            {password.length > 0 && (
-              <View style={styles.strengthRow}>
-                <View style={styles.strengthBarBg}>
-                  <View style={[styles.strengthBar, { width: `${passwordStrength.score}%`, backgroundColor: strengthColors[passwordStrength.strength] }]} />
-                </View>
-                <Text style={[styles.strengthText, { color: strengthColors[passwordStrength.strength] }]}>
-                  {passwordStrength.strength.charAt(0).toUpperCase() + passwordStrength.strength.slice(1)}
-                </Text>
+          <Input
+            label="Password"
+            value={password}
+            onChangeText={t => { setPassword(t); setErrors(e => ({ ...e, password: undefined })); }}
+            placeholder="Min 8 characters"
+            isPassword
+            leftIcon={<Lock size={20} color={colors.textMuted} />}
+            error={errors.password}
+          />
+
+          {password.length > 0 && (
+            <View style={styles.strengthRow}>
+              <View style={styles.strengthBarBg}>
+                <View style={[styles.strengthBar, { width: `${passwordStrength.score}%`, backgroundColor: strengthColors[passwordStrength.strength] }]} />
               </View>
-            )}
-          </View>
+              <Text style={[styles.strengthText, { color: strengthColors[passwordStrength.strength] }]}>
+                {passwordStrength.strength.charAt(0).toUpperCase() + passwordStrength.strength.slice(1)}
+              </Text>
+            </View>
+          )}
 
           {/* Terms */}
           <Text style={[styles.terms, { color: colors.textMuted }]}>
@@ -163,12 +162,12 @@ export default function SignUpScreen() {
             <Text style={{ color: colors.primary }}>Privacy Policy</Text>
           </Text>
 
-          {/* Sign Up Button */}
-          <TouchableOpacity onPress={handleSignUp} disabled={isLoading} activeOpacity={0.8}>
-            <LinearGradient colors={['#667eea', '#764ba2']} style={[styles.btn, isLoading && { opacity: 0.7 }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-              {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Create Account</Text>}
-            </LinearGradient>
-          </TouchableOpacity>
+          <Button
+            title="Create Account"
+            onPress={handleSignUp}
+            loading={isLoading}
+            style={{ marginBottom: 16 }}
+          />
 
           {/* Divider */}
           <View style={styles.divider}>
@@ -181,6 +180,7 @@ export default function SignUpScreen() {
           <SocialAuthButtons
             onGooglePress={handleGoogleSignIn}
             onApplePress={handleAppleSignIn}
+            onPhonePress={() => router.push('/(auth)/phone-auth')}
             isLoading={isLoading}
           />
 
@@ -240,19 +240,12 @@ const styles = StyleSheet.create({
   logoText: { fontSize: 28, fontWeight: '800', color: '#fff' },
   title: { fontSize: 26, fontWeight: '700', marginBottom: 6 },
   subtitle: { fontSize: 16 },
-  field: { marginBottom: 14 },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 6 },
-  inputBox: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, paddingHorizontal: 16, height: 56, borderWidth: 1, gap: 12 },
-  input: { flex: 1, fontSize: 16, height: '100%' },
-  err: { fontSize: 12, marginTop: 4, marginLeft: 4 },
-  strengthRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 8 },
+  strengthRow: { flexDirection: 'row', alignItems: 'center', marginTop: -8, marginBottom: 12, gap: 8 },
   strengthBarBg: { flex: 1, height: 4, backgroundColor: '#E0E0E0', borderRadius: 2, overflow: 'hidden' },
   strengthBar: { height: '100%', borderRadius: 2 },
   strengthText: { fontSize: 12, fontWeight: '600', minWidth: 50 },
   terms: { fontSize: 13, textAlign: 'center', marginBottom: 20, lineHeight: 18 },
-  btn: { height: 56, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  btnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
+  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 12 },
   line: { flex: 1, height: 1 },
   or: { marginHorizontal: 16, fontSize: 13, fontWeight: '600' },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },

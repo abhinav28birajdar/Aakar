@@ -14,10 +14,9 @@ import {
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useAuthStore } from '../../src/stores/authStore';
-import { useUserStore } from '../../src/stores/userStore';
-import { usePostStore } from '../../src/stores/postStore';
-import { MOCK_USERS, MOCK_POSTS } from '../../src/data/mockData';
+import { useAuthStore } from '../../src/context/stores/authStore';
+import { useUserStore } from '../../src/context/stores/userStore';
+import { usePostStore } from '../../src/context/stores/postStore';
 import { formatNumber, screenWidth } from '../../src/utils/helpers';
 import { UserProfile, Post } from '../../src/types';
 
@@ -28,12 +27,41 @@ export default function PublicProfileScreen() {
   const { username } = useLocalSearchParams<{ username: string }>();
   const { colors } = useTheme();
   const currentUser = useAuthStore(s => s.user);
-  const { isFollowing, followUser, unfollowUser } = useUserStore();
+  const { isFollowing, followUser, unfollowUser, fetchUserByUsername } = useUserStore();
+  const { getPostsByUser, loadFeed } = usePostStore();
 
-  const profile = MOCK_USERS.find(u => u.username === username);
-  const userPosts = MOCK_POSTS.filter(p => p.userId === profile?.id);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [userPosts, setUserPosts] = useState<Post[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      setIsLoading(true);
+      if (username) {
+        const user = await fetchUserByUsername(username);
+        setProfile(user);
+        if (user) {
+          const posts = getPostsByUser(user.id);
+          setUserPosts(posts);
+        }
+      }
+      setIsLoading(false);
+    };
+    loadProfile();
+  }, [username]);
+
   const following = profile ? isFollowing(profile.id) : false;
   const isOwnProfile = currentUser?.username === username;
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
+        <View style={styles.notFound}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!profile) {
     return (

@@ -6,6 +6,7 @@ import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
 import firestore from '@react-native-firebase/firestore';
 import { AppNotification, NotificationType, PostUser } from '../types';
 import { Platform } from 'react-native';
+import { handleSilentError } from '../utils/error-handler';
 
 // ============================
 // FCM SETUP & PERMISSIONS
@@ -24,7 +25,7 @@ export const getFCMToken = async (): Promise<string | null> => {
     const token = await messaging().getToken();
     return token;
   } catch (error) {
-    console.error('Error getting FCM token:', error);
+    handleSilentError(error, 'Get FCM Token');
     return null;
   }
 };
@@ -111,7 +112,7 @@ export const setupFCMListeners = (
 ) => {
   // Foreground messages
   const unsubscribeForeground = messaging().onMessage(async remoteMessage => {
-    console.log('FCM foreground message:', remoteMessage);
+    // FCM foreground message received
 
     const { notification: fcmNotification, data } = remoteMessage;
 
@@ -147,7 +148,7 @@ export const setupFCMListeners = (
 
   // Background/quit message tap handler
   messaging().onNotificationOpenedApp(remoteMessage => {
-    console.log('FCM notification opened app:', remoteMessage);
+    // FCM notification opened app
     if (onNotificationPress && remoteMessage.data) {
       onNotificationPress(remoteMessage.data);
     }

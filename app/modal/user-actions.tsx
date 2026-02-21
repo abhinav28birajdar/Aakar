@@ -11,7 +11,7 @@ import {
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useUserStore } from '../../src/stores/userStore';
+import { useUserStore } from '../../src/context/stores/userStore';
 
 export default function UserActionsModal() {
   const router = useRouter();

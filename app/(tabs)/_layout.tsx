@@ -6,8 +6,8 @@ import { Tabs } from 'expo-router';
 import { View, StyleSheet, Platform } from 'react-native';
 import { Home, Search, PlusCircle, Bell, User } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useAuthStore } from '../../src/stores/authStore';
-import { useNotificationStore } from '../../src/stores/notificationStore';
+import { useAuthStore } from '../../src/context/stores/authStore';
+import { useNotificationStore } from '../../src/context/stores/notificationStore';
 
 export default function TabLayout() {
   const { colors } = useTheme();

@@ -1,14 +1,6 @@
 import { Redirect } from 'expo-router';
-import { useAuthStore } from '../src/stores/authStore';
+import { useAuthStore } from '../src/context/stores/authStore';
 
 export default function Index() {
-  const { isAuthenticated, hasCompletedOnboarding } = useAuthStore();
-  
-  if (isAuthenticated && hasCompletedOnboarding) {
-    return <Redirect href="/(tabs)" />;
-  }
-  if (isAuthenticated && !hasCompletedOnboarding) {
-    return <Redirect href="/onboarding/role-select" />;
-  }
-  return <Redirect href="/onboarding/welcome" />;
+  return <Redirect href="/splash" />;
 }

@@ -39,6 +39,7 @@ export interface UserProfile {
   allowMessages: 'everyone' | 'followers' | 'none';
   showOnlineStatus: boolean;
   showLastSeen: boolean;
+  hasCompletedOnboarding: boolean;
 }
 
 export interface AuthState {
@@ -50,8 +51,8 @@ export interface AuthState {
 }
 
 // ---- Post Types ----
-export type PostCategory = 
-  | 'UI/UX' | 'Branding' | 'Illustration' | 'Typography' 
+export type PostCategory =
+  | 'UI/UX' | 'Branding' | 'Illustration' | 'Typography'
   | '3D Art' | 'Motion' | 'Photography' | 'Web Design'
   | 'App Design' | 'Logo Design' | 'Icon Design' | 'Other';
 
@@ -143,8 +144,8 @@ export interface ChatMessage {
 }
 
 // ---- Notification Types ----
-export type NotificationType = 
-  | 'like' | 'comment' | 'follow' | 'mention' 
+export type NotificationType =
+  | 'like' | 'comment' | 'follow' | 'mention'
   | 'share' | 'message' | 'system' | 'milestone'
   | 'challenge' | 'trending' | 'gig_inquiry';
 
@@ -251,6 +252,24 @@ export interface Gig {
   ordersCount: number;
   isActive: boolean;
   createdAt: string;
+}
+
+// ---- Job Types ----
+export interface Job {
+  id: string;
+  title: string;
+  company: string;
+  companyLogo?: string;
+  location: string;
+  type: 'Full-time' | 'Part-time' | 'Contract' | 'Freelance' | 'Internship';
+  salaryRange?: string;
+  description: string;
+  requirements?: string[];
+  postedBy: string;
+  applicantsCount: number;
+  isRemote: boolean;
+  createdAt: string;
+  expiresAt?: string;
 }
 
 // ---- Analytics Types ----

@@ -9,17 +9,16 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, Search, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../src/hooks/useTheme';
-import { useUserStore } from '../src/stores/userStore';
-import { MOCK_USERS } from '../src/data/mockData';
+import { useUserStore } from '../src/context/stores/userStore';
 import { UserCard } from '../src/components/molecules';
 
 export default function FollowingScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { following, isFollowing } = useUserStore();
+  const { getFollowing, isFollowing, following } = useUserStore();
   const [query, setQuery] = useState('');
 
-  const followingUsers = MOCK_USERS.filter(u => following.has(u.id));
+  const followingUsers = getFollowing();
   const filtered = query
     ? followingUsers.filter(u => u.displayName.toLowerCase().includes(query.toLowerCase()) || u.username.toLowerCase().includes(query.toLowerCase()))
     : followingUsers;

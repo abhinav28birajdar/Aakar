@@ -2,14 +2,15 @@
 // Forgot Password Screen
 // ============================================================
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Mail, CheckCircle2 } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useAuthStore } from '../../src/stores/authStore';
+import { useAuthStore } from '../../src/context/stores/authStore';
 import { isValidEmail } from '../../src/utils/helpers';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Input, Button } from '../../src/components/atoms';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export default function ForgotPasswordScreen() {
   const handleSubmit = async () => {
     if (!email.trim()) { setError('Email is required'); return; }
     if (!isValidEmail(email)) { setError('Invalid email format'); return; }
-    
+
     const result = await forgotPassword(email.trim());
     if (result.success) {
       setSent(true);
@@ -47,12 +48,14 @@ export default function ForgotPasswordScreen() {
           <Text style={[styles.hint, { color: colors.textMuted }]}>
             Check your inbox and follow the link to reset your password. The link expires in 15 minutes.
           </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/reset-password')} activeOpacity={0.8} style={{ width: '100%' }}>
-            <LinearGradient colors={['#667eea', '#764ba2']} style={styles.btn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-              <Text style={styles.btnText}>Enter Reset Code</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
+
+          <Button
+            title="Enter Reset Code"
+            onPress={() => router.push('/(auth)/reset-password')}
+            style={{ width: '100%', marginBottom: 16 }}
+          />
+
+          <TouchableOpacity onPress={() => router.back()}>
             <Text style={{ color: colors.primary, fontWeight: '600' }}>Back to Sign In</Text>
           </TouchableOpacity>
         </View>
@@ -75,25 +78,23 @@ export default function ForgotPasswordScreen() {
           Enter your email address and we'll send you a link to reset your password.
         </Text>
 
-        <View style={[styles.inputBox, { backgroundColor: colors.surface, borderColor: error ? colors.error : colors.border }]}>
-          <Mail size={20} color={colors.textMuted} />
-          <TextInput
-            style={[styles.input, { color: colors.text }]}
-            value={email}
-            onChangeText={t => { setEmail(t); setError(''); }}
-            placeholder="your@email.com"
-            placeholderTextColor={colors.textMuted}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
-        {error ? <Text style={[styles.err, { color: colors.error }]}>{error}</Text> : null}
+        <Input
+          label="Email Address"
+          value={email}
+          onChangeText={t => { setEmail(t); setError(''); }}
+          placeholder="your@email.com"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          leftIcon={<Mail size={20} color={colors.textMuted} />}
+          error={error}
+        />
 
-        <TouchableOpacity onPress={handleSubmit} disabled={isLoading} activeOpacity={0.8} style={{ width: '100%', marginTop: 24 }}>
-          <LinearGradient colors={['#667eea', '#764ba2']} style={[styles.btn, isLoading && { opacity: 0.7 }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-            {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Send Reset Link</Text>}
-          </LinearGradient>
-        </TouchableOpacity>
+        <Button
+          title="Send Reset Link"
+          onPress={handleSubmit}
+          loading={isLoading}
+          style={{ width: '100%', marginTop: 8 }}
+        />
       </View>
     </SafeAreaView>
   );
@@ -109,9 +110,4 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: '700', marginBottom: 8 },
   subtitle: { fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
   hint: { fontSize: 13, textAlign: 'center', lineHeight: 18, marginBottom: 32 },
-  inputBox: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, paddingHorizontal: 16, height: 56, borderWidth: 1, gap: 12, width: '100%' },
-  input: { flex: 1, fontSize: 16, height: '100%' },
-  err: { fontSize: 12, marginTop: 4, alignSelf: 'flex-start', marginLeft: 4 },
-  btn: { height: 56, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  btnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
 });

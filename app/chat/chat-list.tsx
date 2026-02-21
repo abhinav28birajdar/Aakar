@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, Search, Plus, Pin, BellOff, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useChatStore } from '../../src/stores/chatStore';
+import { useChatStore } from '../../src/context/stores/chatStore';
 import { ChatRoom } from '../../src/types';
 import { timeAgo, truncateText } from '../../src/utils/helpers';
 import { ChatCard } from '../../src/components/molecules';

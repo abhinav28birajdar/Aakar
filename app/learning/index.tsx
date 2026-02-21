@@ -9,23 +9,29 @@ import { useRouter } from 'expo-router';
 import { Play, Book, Search, Filter, Star, Clock, ArrowLeft } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { MOCK_TUTORIALS, CATEGORIES } from '../../src/data/mockData';
+import { useTutorialStore } from '../../src/context/stores/tutorialStore';
+import { CATEGORIES } from '../../src/config/constants';
 import { formatNumber } from '../../src/utils/helpers';
+import { Tutorial } from '../../src/types';
 
 export default function LearningScreen() {
     const router = useRouter();
     const { colors } = useTheme();
+    const { tutorials, loadTutorials, isLoading } = useTutorialStore();
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
 
-    const filteredTutorials = MOCK_TUTORIALS.filter(t => {
-        const matchesCat = selectedCategory === 'All' || t.category === selectedCategory;
+    React.useEffect(() => {
+        loadTutorials(selectedCategory === 'All' ? undefined : selectedCategory);
+    }, [selectedCategory]);
+
+    const filteredTutorials = tutorials.filter(t => {
         const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             t.description.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesCat && matchesSearch;
+        return matchesSearch;
     });
 
-    const renderTutorialCard = ({ item }: { item: typeof MOCK_TUTORIALS[0] }) => (
+    const renderTutorialCard = ({ item }: { item: Tutorial }) => (
         <TouchableOpacity
             style={[styles.card, { backgroundColor: colors.surface }]}
             onPress={() => router.push(`/learning/${item.id}`)}

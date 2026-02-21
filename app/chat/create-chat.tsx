@@ -1,7 +1,7 @@
 // ============================================================
 // Create Chat Screen
 // ============================================================
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, Image, TextInput,
 } from 'react-native';
@@ -10,20 +10,40 @@ import { ArrowLeft, Search, X, Check } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useChatStore } from '../../src/stores/chatStore';
-import { MOCK_USERS } from '../../src/data/mockData';
+import { useChatStore } from '../../src/context/stores/chatStore';
+import { useUserStore } from '../../src/context/stores/userStore';
+import { UserProfile } from '../../src/types';
+import { ResponsiveContainer } from '../../src/components/atoms';
+import auth from '@react-native-firebase/auth';
 
 export default function CreateChatScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { createChat } = useChatStore();
+  const { users: allUsers, searchUsers: searchUsersStore, getUserById } = useUserStore();
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
+  const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const currentUserId = auth().currentUser?.uid;
 
-  const users = MOCK_USERS.filter(u => u.id !== '1');
-  const filtered = query
-    ? users.filter(u => u.displayName.toLowerCase().includes(query.toLowerCase()) || u.username.toLowerCase().includes(query.toLowerCase()))
-    : users;
+  const users = allUsers.filter(u => u.id !== currentUserId);
+
+  useEffect(() => {
+    const performSearch = async () => {
+      if (query.trim()) {
+        setIsLoading(true);
+        const results = await searchUsersStore(query);
+        setSearchResults(results.filter(u => u.id !== currentUserId));
+        setIsLoading(false);
+      } else {
+        setSearchResults([]);
+      }
+    };
+    performSearch();
+  }, [query]);
+
+  const filtered = query ? searchResults : users;
 
   const toggleUser = (id: string) => {
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -37,64 +57,66 @@ export default function CreateChatScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <ArrowLeft size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>New Message</Text>
-        <TouchableOpacity onPress={handleCreate} disabled={selected.length === 0}>
-          <Text style={[styles.createText, { color: selected.length > 0 ? colors.primary : colors.textMuted }]}>
-            {selected.length > 1 ? 'Create Group' : 'Chat'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <ResponsiveContainer>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <ArrowLeft size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: colors.text }]}>New Message</Text>
+          <TouchableOpacity onPress={handleCreate} disabled={selected.length === 0}>
+            <Text style={[styles.createText, { color: selected.length > 0 ? colors.primary : colors.textMuted }]}>
+              {selected.length > 1 ? 'Create Group' : 'Chat'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* Selected users */}
-      {selected.length > 0 && (
-        <View style={styles.selectedRow}>
-          {selected.map(id => {
-            const u = MOCK_USERS.find(x => x.id === id);
-            if (!u) return null;
+        {/* Selected users */}
+        {selected.length > 0 && (
+          <View style={styles.selectedRow}>
+            {selected.map(id => {
+              const u = getUserById(id);
+              if (!u) return null;
+              return (
+                <TouchableOpacity key={id} style={[styles.selectedChip, { backgroundColor: colors.primary + '15' }]} onPress={() => toggleUser(id)}>
+                  <Image source={{ uri: u.avatar }} style={styles.selectedAvatar} />
+                  <Text style={[styles.selectedName, { color: colors.primary }]}>{u.displayName.split(' ')[0]}</Text>
+                  <X size={14} color={colors.primary} />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
+        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Search size={18} color={colors.textMuted} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Search people..." placeholderTextColor={colors.textMuted}
+            value={query} onChangeText={setQuery}
+          />
+        </View>
+
+        <FlatList
+          data={filtered}
+          keyExtractor={item => item.id}
+          renderItem={({ item }) => {
+            const isSelected = selected.includes(item.id);
             return (
-              <TouchableOpacity key={id} style={[styles.selectedChip, { backgroundColor: colors.primary + '15' }]} onPress={() => toggleUser(id)}>
-                <Image source={{ uri: u.avatar }} style={styles.selectedAvatar} />
-                <Text style={[styles.selectedName, { color: colors.primary }]}>{u.displayName.split(' ')[0]}</Text>
-                <X size={14} color={colors.primary} />
+              <TouchableOpacity style={styles.userRow} onPress={() => toggleUser(item.id)}>
+                <Image source={{ uri: item.avatar }} style={styles.avatar} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.name, { color: colors.text }]}>{item.displayName}</Text>
+                  <Text style={[styles.handle, { color: colors.textMuted }]}>@{item.username}</Text>
+                </View>
+                <View style={[styles.checkbox, { borderColor: isSelected ? colors.primary : colors.border, backgroundColor: isSelected ? colors.primary : 'transparent' }]}>
+                  {isSelected && <Check size={14} color="#fff" />}
+                </View>
               </TouchableOpacity>
             );
-          })}
-        </View>
-      )}
-
-      <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Search size={18} color={colors.textMuted} />
-        <TextInput
-          style={[styles.searchInput, { color: colors.text }]}
-          placeholder="Search people..." placeholderTextColor={colors.textMuted}
-          value={query} onChangeText={setQuery}
+          }}
+          contentContainerStyle={{ paddingBottom: 40 }}
         />
-      </View>
-
-      <FlatList
-        data={filtered}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => {
-          const isSelected = selected.includes(item.id);
-          return (
-            <TouchableOpacity style={styles.userRow} onPress={() => toggleUser(item.id)}>
-              <Image source={{ uri: item.avatar }} style={styles.avatar} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.name, { color: colors.text }]}>{item.displayName}</Text>
-                <Text style={[styles.handle, { color: colors.textMuted }]}>@{item.username}</Text>
-              </View>
-              <View style={[styles.checkbox, { borderColor: isSelected ? colors.primary : colors.border, backgroundColor: isSelected ? colors.primary : 'transparent' }]}>
-                {isSelected && <Check size={14} color="#fff" />}
-              </View>
-            </TouchableOpacity>
-          );
-        }}
-        contentContainerStyle={{ paddingBottom: 40 }}
-      />
+      </ResponsiveContainer>
     </SafeAreaView>
   );
 }

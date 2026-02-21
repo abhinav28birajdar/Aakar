@@ -1,0 +1,47 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Avatars
+    match /avatars/{userId}/{allPaths=**} {
+      allow read: if true; // Publicly readable
+      allow write: if isOwner(userId) && 
+                      request.resource.size < 5 * 1024 * 1024 && // 5MB limit
+                      request.resource.contentType.matches('image/.*');
+    }
+
+    // Cover Photos
+    match /covers/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isOwner(userId) && 
+                      request.resource.size < 10 * 1024 * 1024 && // 10MB limit
+                      request.resource.contentType.matches('image/.*');
+    }
+
+    // Post Images
+    match /posts/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isOwner(userId) && 
+                      request.resource.size < 20 * 1024 * 1024 && // 20MB limit
+                      request.resource.contentType.matches('image/.*');
+    }
+
+    // Chat Multimedia
+    match /chat/{chatId}/{allPaths=**} {
+      // Need to check if user is participant (complex in Storage rules without Custom Claims or DB lookups)
+      // For basic security, ensure authenticated
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+                      request.resource.size < 50 * 1024 * 1024; // 50MB limit
+    }
+  }
+}

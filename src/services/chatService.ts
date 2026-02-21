@@ -16,26 +16,34 @@ export const getChatRooms = async (userId: string): Promise<ChatRoom[]> => {
     .orderBy('updatedAt', 'desc')
     .get();
 
-  const rooms: ChatRoom[] = [];
-  for (const doc of snapshot.docs) {
-    const data = doc.data();
-    const unreadDoc = await firestore()
+  // Create a batch of promises for unread counts to avoid N+1 issues
+  const unreadPromises = snapshot.docs.map(doc =>
+    firestore()
       .collection('chatRooms')
       .doc(doc.id)
       .collection('unreadCounts')
       .doc(userId)
-      .get();
+      .get()
+  );
 
-    rooms.push({
+  const unreadDocs = await Promise.all(unreadPromises);
+  const unreadMap = new Map();
+  unreadDocs.forEach((doc, index) => {
+    unreadMap.set(snapshot.docs[index].id, doc.exists ? doc.data()?.count || 0 : 0);
+  });
+
+  const rooms: ChatRoom[] = snapshot.docs.map((doc, index) => {
+    const data = doc.data();
+    return {
       id: doc.id,
       participants: data.participants || [],
       lastMessage: data.lastMessage
         ? {
-            ...data.lastMessage,
-            createdAt: data.lastMessage.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-          }
+          ...data.lastMessage,
+          createdAt: data.lastMessage.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        }
         : undefined,
-      unreadCount: unreadDoc.exists ? unreadDoc.data()?.count || 0 : 0,
+      unreadCount: unreadMap.get(doc.id),
       isGroup: data.isGroup || false,
       groupName: data.groupName,
       groupAvatar: data.groupAvatar,
@@ -43,8 +51,8 @@ export const getChatRooms = async (userId: string): Promise<ChatRoom[]> => {
       isPinned: data.pinnedBy?.includes(userId) || false,
       createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
       updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-    });
-  }
+    };
+  });
 
   // Sort: pinned first, then by updatedAt
   rooms.sort((a, b) => {
@@ -133,6 +141,8 @@ export const getMessages = async (
   };
 };
 
+import { uploadFile } from './storageService';
+
 export const sendMessage = async (
   chatId: string,
   senderId: string,
@@ -140,73 +150,77 @@ export const sendMessage = async (
   imageUri?: string,
   replyTo?: { id: string; text: string; senderName: string }
 ): Promise<string> => {
-  let imageUrl: string | undefined;
+  try {
+    let imageUrl: string | undefined;
 
-  if (imageUri && !imageUri.startsWith('http')) {
-    const ref = storage().ref(`chat/${chatId}/${Date.now()}.jpg`);
-    await ref.putFile(imageUri);
-    imageUrl = await ref.getDownloadURL();
-  } else {
-    imageUrl = imageUri;
-  }
+    if (imageUri && !imageUri.startsWith('http')) {
+      const path = `chat/${chatId}/${Date.now()}.jpg`;
+      imageUrl = await uploadFile(imageUri, path);
+    } else {
+      imageUrl = imageUri;
+    }
 
-  const now = firestore.FieldValue.serverTimestamp();
-  const messageData: any = {
-    chatId,
-    senderId,
-    text: text || null,
-    image: imageUrl || null,
-    audio: null,
-    file: null,
-    replyTo: replyTo || null,
-    isRead: false,
-    isDelivered: true,
-    reactions: {},
-    createdAt: now,
-    isDeleted: false,
-  };
-
-  const docRef = await firestore()
-    .collection('chatRooms')
-    .doc(chatId)
-    .collection('messages')
-    .add(messageData);
-
-  // Update lastMessage and updatedAt in the chat room
-  await firestore().collection('chatRooms').doc(chatId).update({
-    lastMessage: {
-      id: docRef.id,
+    const now = firestore.FieldValue.serverTimestamp();
+    const messageData: any = {
+      chatId,
       senderId,
       text: text || null,
       image: imageUrl || null,
+      audio: null,
+      file: null,
+      replyTo: replyTo || null,
       isRead: false,
       isDelivered: true,
       reactions: {},
       createdAt: now,
       isDeleted: false,
-    },
-    updatedAt: now,
-  });
+    };
 
-  // Increment unread count for other participants
-  const roomDoc = await firestore().collection('chatRooms').doc(chatId).get();
-  const participantIds: string[] = roomDoc.data()?.participantIds || [];
-  
-  for (const pid of participantIds) {
-    if (pid !== senderId) {
-      await firestore()
-        .collection('chatRooms')
-        .doc(chatId)
-        .collection('unreadCounts')
-        .doc(pid)
-        .set(
-          { count: firestore.FieldValue.increment(1) },
-          { merge: true }
-        );
+    const docRef = await firestore()
+      .collection('chatRooms')
+      .doc(chatId)
+      .collection('messages')
+      .add(messageData);
+
+    // Update lastMessage and updatedAt in the chat room atomically
+    await firestore().collection('chatRooms').doc(chatId).update({
+      lastMessage: {
+        id: docRef.id,
+        senderId,
+        text: text || null,
+        image: imageUrl || null,
+        isRead: false,
+        isDelivered: true,
+        reactions: {},
+        createdAt: now,
+        isDeleted: false,
+      },
+      updatedAt: now,
+    });
+
+    // Increment unread count for other participants
+    const roomDoc = await firestore().collection('chatRooms').doc(chatId).get();
+    const participantIds: string[] = roomDoc.data()?.participantIds || [];
+
+    // Batch updates for unread counts
+    const batch = firestore().batch();
+    for (const pid of participantIds) {
+      if (pid !== senderId) {
+        const unreadRef = firestore()
+          .collection('chatRooms')
+          .doc(chatId)
+          .collection('unreadCounts')
+          .doc(pid);
+        batch.set(unreadRef, { count: firestore.FieldValue.increment(1) }, { merge: true });
+      }
     }
-  }
+    await batch.commit();
 
-  return docRef.id;
+    return docRef.id;
+  } catch (error: any) {
+    console.error('Send Message Error:', error);
+    throw new Error(error.message || 'Failed to send message');
+  }
 };
 
 export const deleteMessage = async (chatId: string, messageId: string): Promise<void> => {
@@ -319,26 +333,38 @@ export const subscribeToChatRooms = (
     .where('participantIds', 'array-contains', userId)
     .orderBy('updatedAt', 'desc')
     .onSnapshot(async snapshot => {
-      const rooms: ChatRoom[] = [];
-      for (const doc of snapshot.docs) {
-        const data = doc.data();
-        const unreadDoc = await firestore()
+      // Use the snapshot data immediately for a fast UI update
+      // Then fetch unread counts in the background
+      const roomIds = snapshot.docs.map(doc => doc.id);
+
+      // Batch fetch unread counts
+      const unreadPromises = roomIds.map(id =>
+        firestore()
           .collection('chatRooms')
-          .doc(doc.id)
+          .doc(id)
           .collection('unreadCounts')
           .doc(userId)
-          .get();
+          .get()
+      );
 
-        rooms.push({
+      const unreadDocs = await Promise.all(unreadPromises);
+      const unreadMap = new Map();
+      unreadDocs.forEach((doc, index) => {
+        unreadMap.set(roomIds[index], doc.exists ? doc.data()?.count || 0 : 0);
+      });
+
+      const rooms: ChatRoom[] = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
           id: doc.id,
           participants: data.participants || [],
           lastMessage: data.lastMessage
             ? {
-                ...data.lastMessage,
-                createdAt: data.lastMessage.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-              }
+              ...data.lastMessage,
+              createdAt: data.lastMessage.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+            }
             : undefined,
-          unreadCount: unreadDoc.exists ? unreadDoc.data()?.count || 0 : 0,
+          unreadCount: unreadMap.get(doc.id) || 0,
           isGroup: data.isGroup || false,
           groupName: data.groupName,
           groupAvatar: data.groupAvatar,
@@ -346,9 +372,11 @@ export const subscribeToChatRooms = (
           isPinned: data.pinnedBy?.includes(userId) || false,
           createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
           updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        });
-      }
+        };
+      });
       callback(rooms);
+    }, (error) => {
+      console.error("Error subscribing to chat rooms:", error);
     });
 };
 

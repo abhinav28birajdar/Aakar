@@ -10,7 +10,7 @@ import { ArrowLeft, Trophy, Users, Clock, Share2, Star } from 'lucide-react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../src/hooks/useTheme';
-import { MOCK_CHALLENGES } from '../../src/data/mockData';
+import { useChallengeStore } from '../../src/context/stores/challengeStore';
 import { Button } from '../../src/components/atoms';
 
 const { width } = Dimensions.get('window');
@@ -19,8 +19,17 @@ export default function ChallengeDetailScreen() {
     const router = useRouter();
     const { id } = useLocalSearchParams<{ id: string }>();
     const { colors } = useTheme();
+    const { getChallengeLocal, loadChallenges } = useChallengeStore();
 
-    const challenge = MOCK_CHALLENGES.find(c => c.id === id) || MOCK_CHALLENGES[0];
+    const challenge = getChallengeLocal(id as string);
+
+    React.useEffect(() => {
+        if (!challenge) {
+            loadChallenges();
+        }
+    }, [id]);
+
+    if (!challenge) return null;
 
     return (
         <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top']}>
