@@ -82,4 +82,4 @@
 ### 📂 View Latest Progress
 This branch focuses on the implementation of backend logic, Firebase integration, and real-time functional components. To view the stable version or contribute:
 
-👉 **Check the [Main Branch](https://github.com/abhinav28birajdar/Aakar/main)**
+👉 **Check the [Main Branch]([https://github.com/abhinav28birajdar/Aakar/main](https://github.com/abhinav28birajdar/Aakar/tree/main?tab=readme-ov-file))**
