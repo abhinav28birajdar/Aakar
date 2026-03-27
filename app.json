@@ -2,6 +2,7 @@
   "expo": {
     "name": "Aakar",
     "slug": "Aakar",
+<<<<<<< HEAD
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -39,5 +40,44 @@
         }
       ]
     ]
+=======
+    "scheme": "aakar",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./src/assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.aakar.platform"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.aakar.platform",
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./src/assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "453387bd-27dd-4ec8-8044-679aa829016f"
+      }
+    },
+    "owner": "iabhinavv28"
+>>>>>>> 9657734ae222ffc780f8eb91e036f49be6974fbd
   }
 }

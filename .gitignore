@@ -36,6 +36,7 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+<<<<<<< HEAD
 app-example
 
 # generated native folders
@@ -51,3 +52,8 @@ firebase.json
 firestore.rules
 storage.rules
 firestore.indexes.json
+=======
+# generated native folders
+/ios
+/android
+>>>>>>> 9657734ae222ffc780f8eb91e036f49be6974fbd
