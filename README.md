@@ -58,6 +58,3 @@ Aakar is a premium, enterprise-level designer social platform built with React N
    - Place them in the root directory.
 4. **Run the app**: `npx expo start`
 
----
-
-Developed with ❤️ by Antigravity AI
