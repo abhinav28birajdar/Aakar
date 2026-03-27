@@ -3,6 +3,12 @@
 <p align="center">
  <img src="assets/images/icon.png" alt="Aakar Logo" width="120px">
 </p>
+---
+
+## 🎥 Live Application Demo
+https://github.com/user-attachments/assets/f8060c92-cee5-49bd-9b11-fcc92fcabc10
+
+---
 
 ## 🚀 Status: Active Development
 **Aakar** is a production-grade social ecosystem built with **React Native (Expo)** and **Firebase**. We are actively building the core social logic, recommendation algorithms, and distinct workflows for creators, recruiters, and learners.
